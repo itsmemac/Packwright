@@ -187,9 +187,14 @@ jobs:
         run: |
           version="${{ needs.version.outputs.version }}"
           (cd dist && sha256sum * > SHA256SUMS.txt)
-          cat > notes.md <<NOTES
-          ## Packwright v${version}
-
+          # The notes file for this version (release-notes/<version>.md), when there is one, goes first: it is what
+          # the app's update window shows under "what is new".
+          {
+            echo "## Packwright v${version}"
+            echo
+            if [ -f "release-notes/${version}.md" ]; then cat "release-notes/${version}.md"; echo; fi
+          } > notes.md
+          cat >> notes.md <<NOTES
           Pick the installer for your system. Everything is self-contained, nothing else needs to be installed.
 
           | System | Download |

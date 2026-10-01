@@ -96,18 +96,21 @@ public static class Jobs
         }
     }
 
-    public static async Task VerifyImageAsync(string source, Ps5ImageFormat format, CancellationToken token)
+    public static async Task VerifyImageAsync(string source, Ps5ImageFormat format, CancellationToken token,
+        IProgress<PackageTaskProgress>? progress = null)
     {
+        // Report how much has been checked, so the task shows a bar and the size done, left and total.
+        IProgress<FfpfscProgress>? bytes = progress is null ? null : Adapt(progress);
         switch (format)
         {
             case Ps5ImageFormat.Exfat:
-                await ExfatImage.VerifyAsync(source, null, token).ConfigureAwait(false);
+                await ExfatImage.VerifyAsync(source, bytes, token).ConfigureAwait(false);
                 break;
             case Ps5ImageFormat.Ufs2:
-                await Ufs2Operations.VerifyAsync(source, null, token).ConfigureAwait(false);
+                await Ufs2Operations.VerifyAsync(source, progress is null ? null : AdaptUfs2(progress), token).ConfigureAwait(false);
                 break;
             case Ps5ImageFormat.Pfs:
-                FfpfscVerificationResult result = await FfpfscImage.TryVerifyAsync(source, null, null, token)
+                FfpfscVerificationResult result = await FfpfscImage.TryVerifyAsync(source, null, bytes, token)
                     .ConfigureAwait(false);
                 if (!result.StructureValid)
                     throw new InvalidDataException("The FFPFSC structure is invalid. " + (result.Error ?? string.Empty));
@@ -115,7 +118,7 @@ public static class Jobs
                     throw new InvalidDataException("The FFPFSC block decode failed. " + (result.Error ?? string.Empty));
                 break;
             case Ps5ImageFormat.ZArchive:
-                await ZArchiveImage.VerifyAsync(source, null, token).ConfigureAwait(false);
+                await ZArchiveImage.VerifyAsync(source, bytes, token).ConfigureAwait(false);
                 break;
             default:
                 throw new InvalidDataException("Unsupported image format.");

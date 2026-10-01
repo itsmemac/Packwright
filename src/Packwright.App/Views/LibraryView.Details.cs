@@ -439,7 +439,17 @@ public partial class LibraryView
 
     private void OnMenuConvert(object? sender, RoutedEventArgs e)
     {
-        if (_selection.FirstOrDefault() is { } item) _services.RequestToolsSource(item.Path);
+        if (_selection.FirstOrDefault() is { } item) _services.RequestToolsSource(item.Path, "convert");
+    }
+
+    private void OnMenuExtract(object? sender, RoutedEventArgs e)
+    {
+        if (_selection.FirstOrDefault() is { } item) _services.RequestToolsSource(item.Path, "extract");
+    }
+
+    private void OnMenuVerify(object? sender, RoutedEventArgs e)
+    {
+        if (_selection.FirstOrDefault() is { } item) _services.RequestToolsSource(item.Path, "verify");
     }
 
     private async void OnMenuEdit(object? sender, RoutedEventArgs e) => await EditSelectedAsync();

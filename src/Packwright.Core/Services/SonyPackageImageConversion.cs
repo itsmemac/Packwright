@@ -58,6 +58,27 @@ public static class SonyPackageImageConversion
         }
     }
 
+    /// <summary>Explains why a package gave no files, using what the package check itself reports.</summary>
+    private static string NoReadableFilesMessage(Ps5GameInfo game)
+    {
+        string reason = string.Empty;
+        try
+        {
+            if (Packwright.Core.Builders.SonyDebugPackageBuilder.Validate(game.RootPath) is { IsValid: false } result)
+                reason = result.Message;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or
+                                       NotSupportedException or ArgumentException or InvalidOperationException)
+        {
+            reason = ex.Message;
+        }
+        reason = reason.Trim().TrimEnd('.');
+        return "The package does not expose any readable files." +
+               (reason.Length > 0 ? $" The package check says: {reason}." : string.Empty) +
+               " The file may be incomplete or damaged (compare its size and checksum with the source), or it may be a " +
+               "retail package or need a different passcode.";
+    }
+
     private static async Task ExtractCleanTreeAsync(Ps5GameInfo game, string tree,
         IProgress<Ps5ImageConversionProgress>? progress, CancellationToken cancellationToken)
     {
@@ -66,8 +87,7 @@ public static class SonyPackageImageConversion
             .Where(file => file.RelativePath.Length > 0 && !ExcludedPaths.Contains(file.RelativePath))
             .ToArray();
         if (wanted.Length == 0)
-            throw new InvalidDataException(
-                "The package does not expose any readable files (it may be retail or require a passcode).");
+            throw new InvalidDataException(NoReadableFilesMessage(game));
 
         long total = wanted.Sum(file => file.Size);
         long completed = 0;

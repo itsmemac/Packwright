@@ -133,6 +133,7 @@ public sealed class SendToConsoleWindow : Window
             Console = new ConsoleProfile
             {
                 Name = profile.Name, Host = profile.Host, FtpPort = profile.FtpPort, DefaultFolder = profile.DefaultFolder,
+                FtpUser = profile.FtpUser,   // the password is looked up from the saved console when the task runs
                 InstallUrl = profile.InstallUrl, InstallBody = profile.InstallBody, InstallContentType = profile.InstallContentType
             },
             RemoteFolder = UseInstall ? string.Empty : (_folder.Text ?? string.Empty).Trim()

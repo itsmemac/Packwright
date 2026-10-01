@@ -352,7 +352,8 @@ public sealed class PackageTaskQueue : IAsyncDisposable
                 StagePercent = 1d,
                 Step = task.Progress.TotalSteps > 0 ? task.Progress.TotalSteps : task.Progress.Step
             });
-            task.Apply(PackageTaskStatus.Completed, "Completed");
+            // A task may report how it ended (for example "Verified: no problems found"); otherwise it is just "Completed".
+            task.Apply(PackageTaskStatus.Completed, string.IsNullOrWhiteSpace(task.Progress.Result) ? "Completed" : task.Progress.Result);
         }
         catch (OperationCanceledException)
         {
@@ -361,7 +362,7 @@ public sealed class PackageTaskQueue : IAsyncDisposable
         catch (Exception ex)
         {
             task.Failure = ex;
-            task.Apply(PackageTaskStatus.Failed, $"{ex.GetType().Name}: {ex.Message}");
+            task.Apply(PackageTaskStatus.Failed, DescribeFailure(ex));
         }
         finally
         {
@@ -369,6 +370,16 @@ public sealed class PackageTaskQueue : IAsyncDisposable
             task.Cancellation = null;
             Persist();
         }
+    }
+
+    /// <summary>The text shown for a failed task: the message alone for the problems people can act on, never a class name.</summary>
+    private static string DescribeFailure(Exception ex)
+    {
+        string message = ex.Message.TrimEnd('.', ' ');
+        return ex is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or ArgumentException
+            or InvalidOperationException
+            ? message + "."
+            : "Something unexpected went wrong. The details are saved in the log (open the Log page).";
     }
 
     private void Notify() => TasksChanged?.Invoke(this, EventArgs.Empty);

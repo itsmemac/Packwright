@@ -140,6 +140,8 @@ public static class AppSettingsNormalizer
             console.Host = (console.Host ?? string.Empty).Trim();
             console.FtpPort = console.FtpPort is > 0 and <= 65535 ? console.FtpPort : 1337;
             console.DefaultFolder = string.IsNullOrWhiteSpace(console.DefaultFolder) ? "/data" : console.DefaultFolder.Trim();
+            console.FtpUser = (console.FtpUser ?? string.Empty).Trim();
+            console.FtpPassword ??= string.Empty;
             console.InstallUrl ??= string.Empty;
             console.InstallBody ??= string.Empty;
             console.InstallContentType = string.IsNullOrWhiteSpace(console.InstallContentType) ? "application/json" : console.InstallContentType.Trim();

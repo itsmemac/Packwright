@@ -53,6 +53,10 @@ public sealed class ConsoleProfile
     public int FtpPort { get; set; } = 1337;
     /// <summary>Where files go on the console unless another folder is chosen when sending.</summary>
     public string DefaultFolder { get; set; } = "/data";
+    /// <summary>The FTP login. Empty means anyone (anonymous), which console FTP payloads usually allow.</summary>
+    public string FtpUser { get; set; } = string.Empty;
+    /// <summary>Saved on this PC in the settings file (not encrypted). Queued tasks do not keep it.</summary>
+    public string FtpPassword { get; set; } = string.Empty;
 
     // "Install by URL": the console's installer is asked to download a package from this PC. Different installers
     // use different requests, so the request is a template. {host} is the console, {url} the address of the file.

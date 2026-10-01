@@ -89,6 +89,13 @@ public partial class ToolsView : UserControl
 
     public event Action<string>? StatusChanged;
 
+    /// <summary>Picks "convert", "extract" or "verify" in the Action list, when the current source allows it.</summary>
+    public void ChooseAction(string name)
+    {
+        string wanted = name switch { "extract" => ActionExtract, "verify" => ActionVerify, _ => ActionConvert };
+        if (ActionBox.ItemsSource is IEnumerable<string> actions && actions.Contains(wanted)) ActionBox.SelectedItem = wanted;
+    }
+
     private SourceSummary _summary = SourceSummary.Empty;
 
     private async Task LoadSummaryAsync(string source)
@@ -272,6 +279,8 @@ public partial class ToolsView : UserControl
         bool convert = action == ActionConvert;
         bool extract = action == ActionExtract;
         TargetPanel.IsVisible = convert;
+        // Presets hold conversion settings, so they only make sense for Convert / Build (or before a source is chosen).
+        PresetPanel.IsVisible = convert || action is null;
         OutputPanel.IsVisible = convert || extract;
         OutputLabel.Text = extract ? "Output folder" : "Output file";
         PasscodePanel.IsVisible = _isPackage && (extract || action == ActionVerify);

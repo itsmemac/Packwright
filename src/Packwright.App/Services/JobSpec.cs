@@ -78,6 +78,14 @@ public sealed class JobSpec
         catch (JsonException) { return null; }
     }
 
+    private static string Ps5LibraryHealthSize(long bytes) => Packwright.Core.Services.Ps5LibraryHealth.FormatBytes(bytes);
+
+    private static string Elapsed(System.Diagnostics.Stopwatch watch)
+    {
+        TimeSpan time = watch.Elapsed;
+        return time.TotalMinutes >= 1 ? $"{(int)time.TotalMinutes} min {time.Seconds} s" : $"{Math.Max(1, (int)Math.Round(time.TotalSeconds))} s";
+    }
+
     public PackageTaskStage[] Plan() => Kind switch
     {
         Convert => FromPackage ? PackageTaskPlans.ConvertPackage : PackageTaskPlans.ConvertImage,
@@ -155,14 +163,42 @@ public sealed class JobSpec
                     string code = Passcode.Length > 0 ? Passcode : SonyDebugPackageCredentials.DefaultPasscode;
                     return (progress, token) =>
                     {
+                        var watch = System.Diagnostics.Stopwatch.StartNew();
                         SonyDebugPackageValidationResult result = Jobs.VerifyPackage(Source, code);
-                        if (!result.IsValid) throw new InvalidDataException(result.Message);
+                        if (!result.IsValid)
+                            throw new InvalidDataException("This package did not pass verification: " + result.Message.Trim().TrimEnd('.') +
+                                                           ". The file may be damaged or incomplete (compare its size and checksum with where you got it).");
                         Logger.Info($"Package verified: {result.IndexedFiles:N0} indexed file(s).");
+                        progress.Report(new PackageTaskProgress("Verified",
+                            Result: $"Verified: no problems found. {result.IndexedFiles:N0} file(s) checked in {Elapsed(watch)}."));
                         return Task.CompletedTask;
                     };
                 }
                 Ps5ImageFormat verifyFormat = ImageFormat;
-                return (progress, token) => Jobs.VerifyImageAsync(Source, verifyFormat, token);
+                return async (progress, token) =>
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    string label = verifyFormat switch
+                    {
+                        Ps5ImageFormat.Exfat => "exFAT image",
+                        Ps5ImageFormat.Ufs2 => "FFPKG image",
+                        Ps5ImageFormat.Pfs => "FFPFSC image",
+                        Ps5ImageFormat.ZArchive => "ZArchive",
+                        _ => "image"
+                    };
+                    try
+                    {
+                        await Jobs.VerifyImageAsync(Source, verifyFormat, token, progress).ConfigureAwait(false);
+                    }
+                    catch (InvalidDataException ex)
+                    {
+                        throw new InvalidDataException($"This {label} did not pass verification: {ex.Message.Trim().TrimEnd('.')}. " +
+                                                       "The file may be damaged or incomplete (compare its size and checksum with where you got it).", ex);
+                    }
+                    long length = File.Exists(Source) ? new FileInfo(Source).Length : 0;
+                    progress.Report(new PackageTaskProgress("Verified", Result: $"Verified: no problems found. The {label}" +
+                        (length > 0 ? $" ({Ps5LibraryHealthSize(length)})" : string.Empty) + $" was checked in {Elapsed(watch)}."));
+                };
             case Repair:
                 return async (progress, token) =>
                     await ExfatImageMaintenance.RepairAsync(Source, Jobs.Adapt(progress), token).ConfigureAwait(false);
@@ -182,7 +218,7 @@ public sealed class JobSpec
                 if (Console is null) return null;
                 ConsoleProfile ftpTarget = Console;
                 string folder = RemoteFolder.Length > 0 ? RemoteFolder : ftpTarget.DefaultFolder;
-                return (progress, token) => ConsoleSender.UploadAsync(ftpTarget, Source, folder, progress, token);
+                return (progress, token) => ConsoleSender.UploadAsync(ConsoleSender.WithSavedLogin(ftpTarget), Source, folder, progress, token);
             case SendInstall:
                 if (Console is null) return null;
                 ConsoleProfile installTarget = Console;

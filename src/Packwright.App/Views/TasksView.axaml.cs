@@ -121,6 +121,15 @@ public partial class TasksView : UserControl
             string message = string.IsNullOrWhiteSpace(task.Message)
                 ? stage
                 : stage.Length > 0 ? stage + ": " + task.Message : task.Message;
+            // "Starting..." is only a placeholder; once there is a real step to show, show that (and how much is done).
+            if (!task.IsTerminal && stage.Length > 0 && task.Message == "Starting...") message = stage;
+            if (!task.IsTerminal && task.Progress.TotalBytes > 0 && task.Status is PackageTaskStatus.Running or PackageTaskStatus.Cancelling)
+            {
+                // Processed, remaining and total size, for every task that knows how big its work is.
+                long total = task.Progress.TotalBytes, done = Math.Clamp(task.Progress.CurrentBytes, 0, total);
+                string Size(long bytes) => Packwright.Core.Services.Ps5LibraryHealth.FormatBytes(bytes);
+                message += $"  ·  {Size(done)} done  ·  {Size(total - done)} left  ·  {Size(total)} total";
+            }
             if (current.Length > 0) message = (message + "  " + current).Trim();
             string details = task.Failure is { } failure
                 ? failure.Message

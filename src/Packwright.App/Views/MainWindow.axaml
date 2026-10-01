@@ -37,8 +37,10 @@
             <Grid x:Name="TasksRow" ColumnDefinitions="Auto,*,Auto">
               <Path Classes="icon" Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
               <TextBlock x:Name="NavTasksText" Grid.Column="1" Text="Tasks" Margin="12,0,0,0" VerticalAlignment="Center" />
-              <Border x:Name="TaskBadge" Grid.Column="2" Classes="pill" IsVisible="False" Padding="8,1">
-                <TextBlock x:Name="TaskBadgeText" />
+              <Border x:Name="TaskBadge" Grid.Column="2" IsVisible="False" MinWidth="20" Height="20" CornerRadius="10" Padding="6,0"
+                      Background="{DynamicResource Accent}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBlock x:Name="TaskBadgeText" FontSize="11" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
             </Grid>
           </RadioButton>

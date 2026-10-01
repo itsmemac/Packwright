@@ -29,7 +29,7 @@ internal static class Cli
     private static readonly HashSet<string> ValueOptions = new(StringComparer.OrdinalIgnoreCase)
     {
         "to", "o", "output", "preset", "passcode", "level", "gain", "cluster", "block", "fragment", "density", "min-free",
-        "compression", "kraken-level", "threads", "playgo", "drm", "builder", "workspace", "format", "folder", "host", "port"
+        "compression", "kraken-level", "threads", "playgo", "drm", "builder", "workspace", "format", "folder", "host", "port", "user", "password"
     };
 
     public static bool IsCommand(string[] args) =>
@@ -159,6 +159,7 @@ internal static class Cli
               verify <source>              Check an image or package for damage.
               send <source> --to <name>    Send to a console on your network (FTP). --folder <path> | --install (a .pkg: the
                                            console downloads it from this PC) | --host <ip> --port <n> instead of --to
+                                           (a console that needs a login: --user <name> --password <text>)
               consoles                     List the consoles saved in Settings.
               version                      Print the version.
 
@@ -296,6 +297,8 @@ internal static class Cli
             profile = new ConsoleProfile { Name = host, Host = host, FtpPort = options.Int("port") ?? 1337 };
         else
             return Fail("send needs --to <console name> or --host <address>.", Usage);
+        if (options.Get("user") is { } user) profile.FtpUser = user;
+        if (options.Get("password") is { } password) profile.FtpPassword = password;
         var progress = new ConsoleProgress();
         Console.Error.WriteLine($"send: {source}");
         if (options.Has("install"))
@@ -359,7 +362,7 @@ internal static class Cli
         if (spec.Output.Length > 0) Console.Error.WriteLine("   -> " + spec.Output);
         await run(printer, token);
         printer.Finish();
-        Console.Error.WriteLine(command == "verify" ? "Verified: no problems found." : "Done.");
+        Console.Error.WriteLine(printer.Result.Length > 0 ? printer.Result : command == "verify" ? "Verified: no problems found." : "Done.");
         return Ok;
     }
 
@@ -469,11 +472,13 @@ internal static class Cli
     private sealed class ConsoleProgress : IProgress<PackageTaskProgress>
     {
         private string _stage = string.Empty;
+        public string Result { get; private set; } = string.Empty;
         private int _lastPercent = -1;
         private bool _lineOpen;
 
         public void Report(PackageTaskProgress value)
         {
+            if (value.Result.Length > 0) Result = value.Result;
             int percent = value.StagePercent >= 0 ? (int)value.StagePercent
                 : value.TotalBytes > 0 ? (int)(value.CurrentBytes * 100 / value.TotalBytes) : -1;
             bool newStage = value.Stage.Length > 0 && value.Stage != _stage;

@@ -115,7 +115,9 @@
                     </ListBox.ItemTemplate>
                     <ListBox.ContextMenu>
                       <ContextMenu Opening="OnContextMenuOpening">
-                        <MenuItem Header="Convert / Build in Tools..." Click="OnMenuConvert" />
+                        <MenuItem Header="Convert / Build..." Click="OnMenuConvert" />
+                        <MenuItem Header="Extract..." Click="OnMenuExtract" />
+                        <MenuItem Header="Verify..." Click="OnMenuVerify" />
                         <MenuItem Header="Edit details and icon..." Click="OnMenuEdit" />
                         <MenuItem Header="Send to console..." Click="OnMenuSend" />
                         <MenuItem Header="Show in file manager" Click="OnMenuReveal" />
@@ -170,7 +172,9 @@
           </DataGrid.Columns>
           <DataGrid.ContextMenu>
             <ContextMenu Opening="OnContextMenuOpening">
-              <MenuItem Header="Convert / Build in Tools..." Click="OnMenuConvert" />
+              <MenuItem Header="Convert / Build..." Click="OnMenuConvert" />
+              <MenuItem Header="Extract..." Click="OnMenuExtract" />
+              <MenuItem Header="Verify..." Click="OnMenuVerify" />
               <MenuItem Header="Edit details and icon..." Click="OnMenuEdit" />
               <MenuItem Header="Send to console..." Click="OnMenuSend" />
               <MenuItem Header="Show in file manager" Click="OnMenuReveal" />

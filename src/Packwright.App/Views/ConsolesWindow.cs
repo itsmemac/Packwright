@@ -18,6 +18,8 @@ public sealed class ConsolesWindow : Window
     private readonly TextBox _host = new() { Watermark = "For example 192.168.1.50" };
     private readonly NumericUpDown _port = new() { Minimum = 1, Maximum = 65535, FormatString = "0", Value = 1337 };
     private readonly TextBox _folder = new() { Watermark = "/data" };
+    private readonly TextBox _user = new() { Watermark = "Leave empty if it lets anyone in" };
+    private readonly TextBox _password = new() { PasswordChar = '•' };
     private readonly TextBox _installUrl = new();
     private readonly TextBox _installBody = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap, MinHeight = 64 };
     private readonly TextBox _contentType = new();
@@ -66,6 +68,14 @@ public sealed class ConsolesWindow : Window
         _form.Children.Add(Field("Name", _name));
         _form.Children.Add(Field("Address on your network", _host));
         _form.Children.Add(Field("FTP port", _port));
+        _form.Children.Add(Field("User name", _user));
+        _form.Children.Add(Field("Password", _password));
+        _form.Children.Add(new TextBlock
+        {
+            Classes = { "muted" }, FontSize = 12, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            Text = "Consoles with an FTP payload usually let anyone in, so leave these empty. A phone or PC running an FTP app " +
+                   "shows the user name and password to use. The password is saved on this PC in Packwright's settings file, not encrypted."
+        });
         _form.Children.Add(Field("Default folder on the console", _folder));
         _form.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { _test } });
         _form.Children.Add(_result);
@@ -151,6 +161,7 @@ public sealed class ConsolesWindow : Window
     private static ConsoleProfile Clone(ConsoleProfile source) => new()
     {
         Name = source.Name, Host = source.Host, FtpPort = source.FtpPort, DefaultFolder = source.DefaultFolder,
+        FtpUser = source.FtpUser, FtpPassword = source.FtpPassword,
         InstallUrl = source.InstallUrl, InstallBody = source.InstallBody, InstallContentType = source.InstallContentType
     };
 
@@ -180,7 +191,7 @@ public sealed class ConsolesWindow : Window
         _form.IsEnabled = index >= 0 && index < _profiles.Count;
         if (!_form.IsEnabled)
         {
-            foreach (TextBox box in new[] { _name, _host, _folder, _installUrl, _installBody, _contentType }) box.Text = string.Empty;
+            foreach (TextBox box in new[] { _name, _host, _folder, _user, _password, _installUrl, _installBody, _contentType }) box.Text = string.Empty;
             return;
         }
         ConsoleProfile profile = _profiles[index];
@@ -188,6 +199,8 @@ public sealed class ConsolesWindow : Window
         _host.Text = profile.Host;
         _port.Value = profile.FtpPort;
         _folder.Text = profile.DefaultFolder;
+        _user.Text = profile.FtpUser;
+        _password.Text = profile.FtpPassword;
         _installUrl.Text = profile.InstallUrl;
         _installBody.Text = profile.InstallBody;
         _contentType.Text = profile.InstallContentType;
@@ -204,6 +217,8 @@ public sealed class ConsolesWindow : Window
         profile.Host = (_host.Text ?? string.Empty).Trim();
         profile.FtpPort = (int)(_port.Value ?? 1337);
         profile.DefaultFolder = string.IsNullOrWhiteSpace(_folder.Text) ? "/data" : _folder.Text.Trim();
+        profile.FtpUser = (_user.Text ?? string.Empty).Trim();
+        profile.FtpPassword = _password.Text ?? string.Empty;
         profile.InstallUrl = (_installUrl.Text ?? string.Empty).Trim();
         profile.InstallBody = _installBody.Text ?? string.Empty;
         profile.InstallContentType = string.IsNullOrWhiteSpace(_contentType.Text) ? "application/json" : _contentType.Text.Trim();

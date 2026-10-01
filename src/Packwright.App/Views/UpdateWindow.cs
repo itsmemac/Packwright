@@ -33,10 +33,18 @@ public sealed class UpdateWindow : Window
         ShowInTaskbar = false;
 
         string when = release.PublishedUtc is { } published ? $"  ·  released {published.ToLocalTime():d MMMM yyyy}" : string.Empty;
-        var notes = new TextBox
+        // The notes are Markdown (headings, bold, bullets): show them formatted, not as raw text.
+        var notes = new Border
         {
-            Text = release.Notes.Length > 0 ? release.Notes.Replace("\r\n", "\n").Trim() : "No release notes were published.",
-            IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 240, MinHeight = 110
+            Classes = { "card" }, Padding = new Thickness(14, 10), MaxHeight = 300,
+            Child = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+                Content = release.Notes.Trim().Length > 0
+                    ? new Border { Padding = new Thickness(0, 0, 18, 0), Child = MarkdownLite.Render(release.Notes) }   // room for the scrollbar
+                    : new TextBlock { Text = "No release notes were published.", Classes = { "muted" } }
+            }
         };
 
         bool installer = _asset is not null && UpdateChecker.IsInstaller(_asset);

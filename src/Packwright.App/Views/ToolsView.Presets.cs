@@ -16,6 +16,7 @@ public partial class ToolsView
         new() { Name = "Smallest FFPFSC (level 9)", Target = nameof(Target.Ffpfsc), Level = 9, Gain = 1 },
         new() { Name = "Fast FFPFSC (level 3)", Target = nameof(Target.Ffpfsc), Level = 3, Gain = 5 },
         new() { Name = "exFAT image with AMPR index", Target = nameof(Target.Exfat), GenerateAmpr = true },
+        new() { Name = "ZArchive (.zar)", Target = nameof(Target.ZArchive) },
         new() { Name = "Debug package, reproducible", Target = nameof(Target.Fpkg), Deterministic = true }
     ];
 

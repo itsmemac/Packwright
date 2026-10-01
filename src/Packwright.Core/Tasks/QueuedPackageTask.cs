@@ -24,7 +24,8 @@ public readonly record struct PackageTaskProgress(
     int CurrentItem = 0,
     int TotalItems = 0,
     string CurrentFile = "",
-    double StagePercent = -1)
+    double StagePercent = -1,
+    string Result = "")
 {
     public static readonly PackageTaskProgress Empty = new(string.Empty);
 

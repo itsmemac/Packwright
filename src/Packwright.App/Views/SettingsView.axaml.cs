@@ -165,6 +165,7 @@ public partial class SettingsView : UserControl
                 "Include the saved package passcode in the exported file?", "Include", "Leave out");
         AppSettings copy = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(_services.Settings)) ?? new();
         if (!includePasscode) copy.DebugPasscode = string.Empty;
+        foreach (ConsoleProfile console in copy.Consoles) console.FtpPassword = string.Empty;   // passwords are never exported
         try
         {
             await File.WriteAllTextAsync(file, JsonSerializer.Serialize(copy, new JsonSerializerOptions { WriteIndented = true }));

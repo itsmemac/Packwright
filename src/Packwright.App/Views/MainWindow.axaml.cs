@@ -51,10 +51,11 @@ public partial class MainWindow : Window
         };
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DropEvent, OnDrop);
-        services.ToolsSourceRequested += path =>
+        services.ToolsSourceRequested += (path, action) =>
         {
             NavTools.IsChecked = true;
             ToolsPane.SetSource(path);
+            if (action is not null) ToolsPane.ChooseAction(action);
         };
         LibraryPane.StatusChanged += text => StatusText.Text = text;
         HealthPane.StatusChanged += text => StatusText.Text = text;
@@ -155,10 +156,18 @@ public partial class MainWindow : Window
             if (compact) button.Padding = new Thickness(0, 10);
             else button.ClearValue(Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty);
         }
-        // The task count badge sits right next to the icon when the label is hidden.
-        TasksRow.ColumnDefinitions = compact ? new ColumnDefinitions("Auto,Auto") : new ColumnDefinitions("Auto,*,Auto");
-        Grid.SetColumn(TaskBadge, compact ? 1 : 2);
-        TaskBadge.Margin = compact ? new Thickness(6, 0, 0, 0) : default;
+        // With the label hidden, the task count becomes a small badge on the corner of the icon; otherwise it sits at the right edge.
+        TasksRow.ColumnDefinitions = compact ? new ColumnDefinitions("Auto") : new ColumnDefinitions("Auto,*,Auto");
+        Grid.SetColumn(TaskBadge, compact ? 0 : 2);
+        TaskBadge.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right;
+        TaskBadge.VerticalAlignment = compact ? Avalonia.Layout.VerticalAlignment.Top : Avalonia.Layout.VerticalAlignment.Center;
+        TaskBadge.Margin = compact ? new Thickness(0, -7, -9, 0) : default;
+        TaskBadge.MinWidth = compact ? 16 : 20;
+        TaskBadge.Height = compact ? 16 : 20;
+        TaskBadge.CornerRadius = new CornerRadius(compact ? 8 : 10);
+        TaskBadge.Padding = new Thickness(compact ? 4 : 6, 0);
+        TaskBadge.ZIndex = 5;
+        TaskBadgeText.FontSize = compact ? 10 : 11;
     }
 
     /// <summary>Puts the window back where, and as big as, the user left it.</summary>
@@ -286,7 +295,7 @@ public partial class MainWindow : Window
         int queued = tasks.Count(task => task.Status == PackageTaskStatus.Queued);
         TaskSummary.Text = running + queued == 0 ? string.Empty : $"{running} running, {queued} queued";
         TaskBadge.IsVisible = running + queued > 0;
-        TaskBadgeText.Text = (running + queued).ToString();
+        TaskBadgeText.Text = running + queued > 99 ? "99+" : (running + queued).ToString();
     }
 
     private void OnDrop(object? sender, DragEventArgs e)

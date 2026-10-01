@@ -114,7 +114,7 @@ Only do this for downloads you got from this project's [releases page](https://g
 
 1. Open **Library** and choose **Add folder**. Point it at a folder with PS5 dumps, `.pkg` files or images. Use **More > Add a package or image file** for a single item.
 2. Browse your collection as artwork cards or as a list. Select a game to see its details on the right.
-3. Right-click a game for the things you can do with it: convert or build it, edit its details, send it to a console, rename, move or delete it.
+3. Right-click a game for the things you can do with it: convert or build, extract or verify it, edit its details, send it to a console, rename, move or delete it.
 4. Open **Tools** to convert, extract, verify or repair something. The source can come from the library, the file pickers, drag and drop onto the window, or the command line:
 
    ```
@@ -157,7 +157,7 @@ The **Health** page checks the whole library at a glance: files that were moved 
 
 - **Convert** between dump folders and **exFAT**, **FFPKG**, **FFPFSC** and **ZArchive (`.zar`)** images, or build a debug package (**FPKG**) from a dump or an image. A `.zar` can be used as a source too: extract it, verify it, convert it to another image, or build a package from it.
 - **Presets:** save the target and all its options under a name and apply them again in one click. A few presets are built in (for example the smallest FFPFSC, or a reproducible package). A preset never contains the source or output path.
-- **Extract** a dump tree out of an image or package, and **verify** images and packages.
+- **Extract** a dump tree out of an image or package, and **verify** images and packages. A finished check says "Verified: no problems found" with what was checked and how long it took; a failed one says in plain words what is wrong.
 - **Edit files** inside exFAT and FFPKG images (replace, add, import a folder, create folders, delete). Changes are rebuilt beside the original and swapped in only after verification.
 - **Repair** a damaged exFAT image, **refresh the AMPR index**, and **rebuild** FFPKG metadata.
 - ZArchive files are written and read by a managed implementation of the [ZArchive](https://github.com/Exzap/ZArchive) format (zstd blocks, SHA-256 integrity). A new archive is verified after the build, and a `.zar` in your library is browsed in place, without unpacking it.
@@ -173,10 +173,10 @@ The **Health** page checks the whole library at a glance: files that were moved 
 
 Right-click a game, image or package and choose **Send to console...** to put it on a console on your own network.
 
-- **FTP upload:** large files are streamed, a partly sent file is continued, a copy that is already there is skipped, the size is checked afterwards, and dropped connections are retried. Dump folders upload file by file. It runs as a background task with progress on the Tasks page.
+- **FTP upload:** large files are streamed, a partly sent file is continued (when the console supports it), a copy that is already there is skipped, and the size is checked afterwards. If the connection drops (a sleeping phone, a Wi-Fi hiccup) Packwright waits and reconnects by itself, up to six times in a row without progress, and shows a countdown. If it finally gives up, the task says why in plain words and **Retry** on the Tasks page picks up where it stopped. Dump folders upload file by file. It runs as a background task with progress on the Tasks page.
 - **Install by URL** (for a `.pkg`): Packwright shares the file from your PC for the length of the download and asks the console's package installer to fetch it. Installer payloads differ in the request they expect, so the request is a template you can adjust; its defaults follow the common "remote package installer" style and are **untested** on a real console.
-- **Consoles** are set up in **Settings > Manage consoles** (address, FTP port, default folder, **Test connection**).
-- **Privacy and safety:** only addresses on your local network are accepted, nothing is contacted until you press Send or Test, and no account or password is stored. Your firewall may ask you to allow Packwright while it shares a file.
+- **Consoles** are set up in **Settings > Manage consoles** (address, FTP port, default folder, **Test connection**). Console FTP payloads usually let anyone in, so the user name and password can stay empty. A phone or PC running an FTP app normally shows a user name and password to enter there; the password is saved in your settings file, not encrypted, and is never exported.
+- **Privacy and safety:** only addresses on your local network are accepted, and nothing is contacted until you press Send or Test. Your firewall may ask you to allow Packwright while it shares a file.
 - Also available as `packwright send` (see [Command line](#command-line)).
 
 ### Updates

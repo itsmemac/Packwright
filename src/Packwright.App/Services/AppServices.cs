@@ -95,9 +95,10 @@ public sealed class AppServices
     public void NotifySettingsChanged() => SettingsChanged?.Invoke();
 
     /// <summary>Raised when another view wants the Tools tab to work on a path.</summary>
-    public event Action<string>? ToolsSourceRequested;
+    /// <summary>Open the Tools page with this source; the optional action ("convert", "extract" or "verify") is chosen for the user.</summary>
+    public event Action<string, string?>? ToolsSourceRequested;
 
-    public void RequestToolsSource(string path) => ToolsSourceRequested?.Invoke(path);
+    public void RequestToolsSource(string path, string? action = null) => ToolsSourceRequested?.Invoke(path, action);
 
     /// <summary>Queues a job described by <paramref name="spec"/>; it is saved and restored across restarts.</summary>
     public QueuedPackageTask EnqueueJob(JobSpec spec, string displayName, string operation, string sourceFormat,

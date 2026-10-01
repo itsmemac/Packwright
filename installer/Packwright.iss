@@ -1,10 +1,10 @@
 ; Packwright installer (Inno Setup 6). Built by the release workflow:
-;   iscc /DAppVersion=1.0.0 /DSourceDir=<publish folder> /O<output folder> installer\Packwright.iss
+;   iscc /DAppVersion=1.0.1 /DSourceDir=<publish folder> /O<output folder> installer\Packwright.iss
 ; Installs for the current user by default (no administrator prompt), so a silent update is smooth. The "for all
 ; users" choice is offered when the installer is started as administrator.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.0.1"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\publish"
