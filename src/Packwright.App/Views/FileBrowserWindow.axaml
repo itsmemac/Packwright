@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:Packwright.App.Views"
+        x:Class="Packwright.App.Views.FileBrowserWindow"
+        Title="File browser" Width="1180" Height="760" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Icon="avares://Packwright/Assets/icon.png">
+  <Grid RowDefinitions="Auto,*" Margin="22,18,22,18">
+    <StackPanel Spacing="3" Margin="0,0,0,14">
+      <TextBlock x:Name="TitleText" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+      <TextBlock x:Name="SubText" Classes="muted" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+    <v:FilesPanel x:Name="Files" Grid.Row="1" />
+  </Grid>
+</Window>

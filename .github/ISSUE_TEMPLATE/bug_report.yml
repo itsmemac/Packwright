@@ -1,0 +1,83 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please search existing issues first.
+        Packwright does not provide games, keys or Sony SDK files, and issues asking for them will be closed.
+  - type: input
+    id: version
+    attributes:
+      label: Packwright version
+      description: Shown on the About page and in the sidebar, for example 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+    validations:
+      required: true
+  - type: input
+    id: osversion
+    attributes:
+      label: OS version
+      placeholder: Windows 11 24H2, Ubuntu 24.04, macOS 15.1
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Library / scanning / list view
+        - Edit details / autofill / online lookup
+        - Tools (build, convert, extract, presets)
+        - Image editor / file browser
+        - Tasks
+        - Library health
+        - Send to console
+        - Export
+        - Command line
+        - Installer / updates
+        - ZArchive (.zar)
+        - Packages (.pkg)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Tools
+        2. Choose a game folder as the source
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: format
+    attributes:
+      label: Input type and size
+      description: Folder dump, .pkg, .ffpkg, .exfat, .ffpfs, .zar and roughly how large it is.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        Copy the relevant lines from the Log page (Log > Open log folder), or attach the latest file from
+        `%LOCALAPPDATA%\Packwright\logs` (Windows) or `~/.local/share/Packwright/logs` (Linux/macOS).
+        Remove personal paths if you want to.
+      render: text

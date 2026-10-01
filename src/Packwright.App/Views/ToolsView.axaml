@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.ToolsView">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <StackPanel Margin="32,26,32,8" Spacing="4">
+      <TextBlock Text="Image tools" Classes="title" />
+      <TextBlock Classes="muted" TextWrapping="Wrap"
+                 Text="Convert, extract, verify and repair dumps, images and packages. Every job runs in the background on the Tasks page." />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Margin="32,10,32,24" Spacing="16">
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="1 · SOURCE" Classes="section" />
+            <DockPanel>
+              <Button x:Name="BrowseFolderButton" DockPanel.Dock="Right" Content="Folder..." Margin="8,0,0,0" />
+              <Button x:Name="BrowseFileButton" DockPanel.Dock="Right" Content="File..." Margin="8,0,0,0" />
+              <TextBox x:Name="SourceBox" Watermark="Drop a dump folder, .exfat, .ffpkg, .ffpfsc or .pkg here, or browse" />
+            </DockPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+              <Border x:Name="SourceIconHost" Width="56" Height="56" CornerRadius="11" ClipToBounds="True"
+                      Background="{DynamicResource InputBg}" IsVisible="False">
+                <Image x:Name="SourceIcon" Stretch="UniformToFill" />
+              </Border>
+              <StackPanel VerticalAlignment="Center" Spacing="5">
+                <TextBlock x:Name="SourceTitle" FontWeight="SemiBold" FontSize="15" IsVisible="False" />
+                <Border Classes="pill" HorizontalAlignment="Left">
+                  <TextBlock x:Name="DetectedText" Text="Nothing selected" />
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="12">
+            <TextBlock Text="2 · WHAT TO DO" Classes="section" />
+            <Grid ColumnDefinitions="*,16,*">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Action" Classes="h" />
+                <ComboBox x:Name="ActionBox" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel x:Name="TargetPanel" Grid.Column="2" Spacing="6">
+                <TextBlock Text="Convert to" Classes="h" />
+                <ComboBox x:Name="TargetBox" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Grid>
+            <StackPanel x:Name="PresetPanel" Spacing="6">
+              <TextBlock Text="Preset" Classes="h" />
+              <DockPanel>
+                <Button x:Name="PresetDeleteButton" DockPanel.Dock="Right" Content="Delete" Margin="8,0,0,0" IsEnabled="False" />
+                <Button x:Name="PresetSaveButton" DockPanel.Dock="Right" Content="Save current as..." Margin="8,0,0,0" />
+                <ComboBox x:Name="PresetBox" HorizontalAlignment="Stretch" />
+              </DockPanel>
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                         Text="A preset fills in the target format and its options. It never touches the source or the output path." />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="OutputPanel" Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="3 · OUTPUT" Classes="section" />
+            <TextBlock x:Name="OutputLabel" Text="Output file" Classes="h" />
+            <DockPanel>
+              <Button x:Name="BrowseOutputButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
+              <TextBox x:Name="OutputBox" />
+            </DockPanel>
+            <CheckBox x:Name="OverwriteBox" Content="Overwrite the output if it already exists" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="PasscodePanel" Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="PACKAGE PASSCODE" Classes="section" />
+            <TextBox x:Name="PasscodeBox" Watermark="Leave blank for the default (32 zeros)" MaxLength="32" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="ImageOptions" Classes="card" IsVisible="False">
+          <StackPanel Spacing="12">
+            <TextBlock Text="IMAGE OPTIONS" Classes="section" />
+            <Grid ColumnDefinitions="*,16,*">
+              <StackPanel x:Name="ExfatOptions" Spacing="6">
+                <TextBlock Text="exFAT cluster size" Classes="h" />
+                <ComboBox x:Name="ClusterBox" HorizontalAlignment="Stretch" />
+                <CheckBox x:Name="AmprBox" Content="Generate AMPR index" IsChecked="True" />
+              </StackPanel>
+              <StackPanel x:Name="FfpfscOptions" Grid.Column="2" Spacing="6">
+                <TextBlock Text="FFPFSC compression level (1-9)" Classes="h" />
+                <NumericUpDown x:Name="LevelBox" Minimum="1" Maximum="9" Value="7" FormatString="0" />
+                <TextBlock Text="Minimum gain to compress a block (%)" Classes="h" Margin="0,6,0,6" />
+                <NumericUpDown x:Name="GainBox" Minimum="0" Maximum="100" Value="1" FormatString="0" />
+              </StackPanel>
+            </Grid>
+            <Grid x:Name="FfpkgOptions" ColumnDefinitions="*,12,*,12,*,12,*">
+              <StackPanel Spacing="6"><TextBlock Text="Block size" Classes="h" /><ComboBox x:Name="BlockBox" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Fragment size" Classes="h" /><ComboBox x:Name="FragmentBox" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="4" Spacing="6"><TextBlock Text="Bytes per inode" Classes="h" /><ComboBox x:Name="DensityBox" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="6" Spacing="6"><TextBlock Text="Minimum free (%)" Classes="h" /><NumericUpDown x:Name="MinFreeBox" Minimum="0" Maximum="50" Value="0" FormatString="0" /></StackPanel>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="BuildOptions" Classes="card" IsVisible="False">
+          <StackPanel Spacing="12">
+            <TextBlock Text="PACKAGE BUILD OPTIONS" Classes="section" />
+            <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Builder" Classes="h" />
+                <ComboBox x:Name="BackendBox" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="6">
+                <TextBlock Text="Inner compression" Classes="h" />
+                <ComboBox x:Name="CompressionBox" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Margin="0,12,0,0" Spacing="6">
+                <TextBlock Text="PlayGo chunks" Classes="h" />
+                <NumericUpDown x:Name="PlayGoBox" Minimum="1" Maximum="64" Value="1" FormatString="0" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,12,0,0" Spacing="8" VerticalAlignment="Bottom">
+                <CheckBox x:Name="DeterministicBox" Content="Reproducible output (fixed seed)" />
+                <CheckBox x:Name="FakeSignBox" Content="Fake-sign modules" IsChecked="True" />
+                <CheckBox x:Name="RightSprxBox" Content="Inject right.sprx" IsChecked="True" />
+              </StackPanel>
+            </Grid>
+            <Expander Header="Advanced" Margin="0,4,0,0">
+              <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto,Auto" Margin="0,10,0,0">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="DRM type" Classes="h" />
+                  <ComboBox x:Name="DrmBox" HorizontalAlignment="Stretch" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6">
+                  <TextBlock Text="SDK version" Classes="h" />
+                  <ComboBox x:Name="SdkBox" HorizontalAlignment="Stretch" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Margin="0,12,0,0" Spacing="6">
+                  <TextBlock Text="Kraken level" Classes="h" />
+                  <ComboBox x:Name="KrakenLevelBox" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="The built-in Kraken encoder uses one fixed strategy. The level is recorded in the image header but does not change the compressed size." />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,12,0,0" Spacing="6">
+                  <TextBlock Text="Kraken threads (0 = automatic)" Classes="h" />
+                  <NumericUpDown x:Name="KrakenThreadsBox" Minimum="0" Maximum="64" Value="0" FormatString="0" />
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,12,0,0" Spacing="6">
+                  <TextBlock Text="Workspace folder (temporary files)" Classes="h" />
+                  <DockPanel>
+                    <Button x:Name="BrowseTempButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
+                    <TextBox x:Name="TempBox" Watermark="System temporary folder when empty" />
+                  </DockPanel>
+                </StackPanel>
+              </Grid>
+            </Expander>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" Classes="panel" BorderThickness="0,1,0,0" Padding="32,14">
+      <DockPanel>
+        <Button x:Name="RunButton" DockPanel.Dock="Left" Content="Run" Classes="accent" MinWidth="140" Padding="18,10" />
+        <TextBlock x:Name="ResultText" Margin="16,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" Classes="muted" />
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

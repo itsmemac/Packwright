@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Packwright
+GenericName=PS5 package tool
+Comment=Manage PS5 dumps, images and packages
+Exec=/opt/packwright/Packwright %F
+Icon=packwright
+Terminal=false
+Categories=Utility;
+StartupNotify=true
+StartupWMClass=Packwright

@@ -1,0 +1,22 @@
+name: Build
+
+# Pull requests are built on all four targets to catch breakage. Pushes to main are built and released
+# by release.yml.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, linux-x64, osx-arm64, osx-x64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish
+        run: dotnet publish src/Packwright.App/Packwright.App.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish

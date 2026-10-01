@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.SettingsView">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <StackPanel Margin="32,26,32,10" Spacing="4">
+      <TextBlock Text="Settings" Classes="title" />
+      <TextBlock Text="Preferences are saved to your user profile and shared across Windows, Linux and macOS builds." Classes="muted" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Margin="32,8,32,24" Spacing="16" MaxWidth="920" HorizontalAlignment="Left">
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="LIBRARY" Classes="section" />
+            <ListBox x:Name="FolderList" Height="140" Background="{DynamicResource InputBg}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="AddFolderButton" Content="Add folder..." />
+              <Button x:Name="RemoveFolderButton" Content="Remove selected" />
+            </StackPanel>
+            <CheckBox x:Name="RecursiveBox" Content="Scan sub-folders" />
+            <CheckBox x:Name="RefreshOnStartBox" Content="Refresh the library when the app starts" />
+            <CheckBox x:Name="UpdateCheckBox" Content="Check for new versions once a day (contacts github.com)" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="APPEARANCE" Classes="section" />
+            <StackPanel Spacing="6">
+              <TextBlock Text="Library view" Classes="h" />
+              <ComboBox x:Name="ViewBox" HorizontalAlignment="Stretch" />
+              <TextBlock Text="The light, dark and system theme switch is the sun / moon button at the top of the sidebar."
+                         Classes="muted" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+            <CheckBox x:Name="ThumbnailsBox" Content="Show game artwork in the library" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="OUTPUT AND NAMING" Classes="section" />
+            <TextBlock Text="Default output folder" Classes="h" />
+            <DockPanel>
+              <Button x:Name="BrowseOutputButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
+              <TextBox x:Name="OutputBox" Watermark="Next to the source when empty" />
+            </DockPanel>
+            <TextBlock Text="Custom rename format" Classes="h" Margin="0,6,0,6" />
+            <TextBox x:Name="RenameFormatBox" Watermark="{}{TITLE} [{TITLE_ID}]" />
+            <TextBlock x:Name="RenameTokens" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+            <CheckBox x:Name="OpenOutputBox" Content="Open the output location after a file extraction" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="FILES AND PREVIEW" Classes="section" />
+            <Grid ColumnDefinitions="*,16,*">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Largest previewed file (MB)" Classes="h" />
+                <NumericUpDown x:Name="PreviewMbBox" Minimum="1" Maximum="1024" FormatString="0" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="6">
+                <TextBlock Text="Hex viewer page (KB)" Classes="h" />
+                <NumericUpDown x:Name="HexPageBox" Minimum="1" Maximum="256" FormatString="0" />
+              </StackPanel>
+            </Grid>
+            <CheckBox x:Name="ShowPreviewBox" Content="Show the inline file preview" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="PACKAGE DEFAULTS" Classes="section" />
+            <TextBlock Text="Default passcode" Classes="h" />
+            <TextBox x:Name="PasscodeBox" Watermark="32 characters, blank = all zeros" MaxLength="32" />
+            <TextBlock Text="Preferred builder" Classes="h" Margin="0,6,0,6" />
+            <ComboBox x:Name="BackendBox" MinWidth="320" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="CONSOLES" Classes="section" />
+            <TextBlock Classes="muted" TextWrapping="Wrap"
+                       Text="Send games, images and packages to a console on your own network (right-click an item, then Send to console). Packwright only contacts a console when you press Send or Test." />
+            <Button x:Name="ConsolesButton" Content="Manage consoles..." HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="WindowsCard" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="WINDOWS INTEGRATION" Classes="section" />
+            <TextBlock Classes="muted" TextWrapping="Wrap"
+                       Text="Adds &quot;Open with Packwright&quot; to the Explorer right-click menu for .pkg, .ffpkg, .ffpfsc and .exfat files and for folders. Per-user, no administrator rights needed." />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="InstallShellButton" Content="Add to Explorer menu" />
+              <Button x:Name="RemoveShellButton" Content="Remove" />
+              <TextBlock x:Name="ShellStatus" VerticalAlignment="Center" Classes="muted" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="SAFETY" Classes="section" />
+            <CheckBox x:Name="ConfirmDeleteBox" Content="Ask before deleting" />
+            <CheckBox x:Name="ConfirmMoveBox" Content="Ask before moving" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" Classes="panel" BorderThickness="0,1,0,0" Padding="32,14">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button x:Name="SaveButton" Content="Save settings" Classes="accent" MinWidth="140" Padding="18,10" />
+        <Button x:Name="ImportButton" Content="Import..." />
+        <Button x:Name="ExportButton" Content="Export..." />
+        <TextBlock x:Name="SavedText" VerticalAlignment="Center" Classes="muted" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

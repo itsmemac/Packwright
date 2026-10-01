@@ -1,0 +1,7 @@
+# Keep the Windows launcher and installer script CRLF and the Linux packaging script LF, whatever the checkout settings.
+*.cmd text eol=crlf
+*.iss text eol=crlf
+*.sh text eol=lf
+*.webp binary
+*.png binary
+*.ico binary

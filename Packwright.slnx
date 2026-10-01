@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/Packwright.App/Packwright.App.csproj" />
+  <Project Path="src/Packwright.Core/Packwright.Core.csproj" />
+  <Project Path="src/Packwright.Containers/Packwright.Containers.csproj" />
+  <Project Path="src/Packwright.Ufs2/Packwright.Ufs2.csproj" />
+</Solution>

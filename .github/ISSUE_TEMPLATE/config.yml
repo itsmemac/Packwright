@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/itsmemac/Packwright/discussions
+    about: Ask usage questions here (enable Discussions in the repository settings).

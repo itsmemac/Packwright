@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.HealthView">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+
+    <DockPanel Margin="32,26,24,10">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button x:Name="ExportButton" Content="Export report..." />
+        <Button x:Name="DeepButton" Content="Check files too"
+                ToolTip.Tip="Also looks inside every title for a missing icon, and checks unpacked dumps for launch problems. Slower." />
+        <Button x:Name="RunButton" Content="Check now" Classes="accent" />
+      </StackPanel>
+      <StackPanel Spacing="3">
+        <TextBlock Text="Library health" Classes="title" />
+        <TextBlock x:Name="SubText" Classes="muted" TextWrapping="Wrap" />
+      </StackPanel>
+    </DockPanel>
+
+    <WrapPanel Grid.Row="1" Margin="32,0,24,4">
+      <Border Classes="card" Padding="16,12" Margin="0,0,12,12" MinWidth="130">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="CardTitles" FontSize="24" FontWeight="Bold" Text="0" />
+          <TextBlock Text="titles" Classes="muted" FontSize="12" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="16,12" Margin="0,0,12,12" MinWidth="130">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="CardSize" FontSize="24" FontWeight="Bold" Text="0 B" />
+          <TextBlock Text="in the library" Classes="muted" FontSize="12" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="16,12" Margin="0,0,12,12" MinWidth="130">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="CardProblems" FontSize="24" FontWeight="Bold" Text="0" />
+          <TextBlock Text="problems" Classes="muted" FontSize="12" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="16,12" Margin="0,0,12,12" MinWidth="130">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="CardWarnings" FontSize="24" FontWeight="Bold" Text="0" />
+          <TextBlock Text="warnings" Classes="muted" FontSize="12" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="16,12" Margin="0,0,12,12" MinWidth="130"
+              ToolTip.Tip="Space taken by exact duplicates, older copies and superseded updates. Nothing is deleted for you.">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="CardReclaim" FontSize="24" FontWeight="Bold" Text="0 B" />
+          <TextBlock Text="in duplicates and older copies" Classes="muted" FontSize="12" />
+        </StackPanel>
+      </Border>
+    </WrapPanel>
+
+    <Border x:Name="ProgressHost" Grid.Row="2" Classes="card" Margin="32,0,24,8" Padding="14,10" IsVisible="False">
+      <DockPanel>
+        <Button x:Name="StopButton" DockPanel.Dock="Right" Content="Stop" Classes="ghost" Margin="12,0,0,0" />
+        <StackPanel Spacing="6">
+          <TextBlock x:Name="ProgressText" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+          <ProgressBar x:Name="ProgressBar" Minimum="0" Maximum="100" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="32,0,24,8">
+      <RadioButton x:Name="FilterAll" Classes="chip" GroupName="healthfilter" Content="All" IsChecked="True" />
+      <RadioButton x:Name="FilterProblems" Classes="chip" GroupName="healthfilter" Content="Problems" />
+      <RadioButton x:Name="FilterWarnings" Classes="chip" GroupName="healthfilter" Content="Warnings" />
+      <RadioButton x:Name="FilterNotes" Classes="chip" GroupName="healthfilter" Content="Notes" />
+    </StackPanel>
+
+    <Panel Grid.Row="4">
+      <ListBox x:Name="IssueList" Margin="32,0,24,16" SelectionMode="Single">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="2,6">
+              <Ellipse Width="10" Height="10" Fill="{Binding Dot}" VerticalAlignment="Top" Margin="0,7,12,0" />
+              <StackPanel Grid.Column="1" Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <Border Classes="pill" VerticalAlignment="Center"><TextBlock Text="{Binding Kind}" FontSize="11" /></Border>
+                  <Border Classes="pill" VerticalAlignment="Center" IsVisible="{Binding HasReclaim}">
+                    <TextBlock Text="{Binding ReclaimText}" FontSize="11" />
+                  </Border>
+                </StackPanel>
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Path}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="12,0,16,0">
+                <Button Content="Fix..." Classes="accent" IsVisible="{Binding CanFix}" Click="OnFix" Padding="12,5" />
+                <Button Content="Show" IsVisible="{Binding CanShow}" Click="OnShow" Padding="12,5" />
+                <Button Content="Folder" IsVisible="{Binding CanReveal}" Click="OnReveal" Padding="12,5" />
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" IsVisible="False">
+        <TextBlock x:Name="EmptyTitle" Text="Nothing to fix" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock x:Name="EmptyHint" Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+    </Panel>
+  </Grid>
+</UserControl>

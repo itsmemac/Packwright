@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.AboutView">
+  <ScrollViewer>
+    <StackPanel Margin="32,26,32,28" Spacing="18" MaxWidth="860" HorizontalAlignment="Left">
+
+      <Border Classes="card" Padding="28">
+        <StackPanel Orientation="Horizontal" Spacing="22">
+          <Image Width="92" Height="92" Source="avares://Packwright/Assets/icon.png" />
+          <StackPanel VerticalAlignment="Center" Spacing="4">
+            <TextBlock Text="Packwright" FontSize="28" FontWeight="Bold" />
+            <TextBlock x:Name="VersionText" Classes="muted" />
+            <TextBlock Classes="muted" Text="Windows · Linux · macOS" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="UPDATES" Classes="section" />
+          <TextBlock x:Name="UpdateText" TextWrapping="Wrap" Text="Check whether a newer version has been released on GitHub. Only this request is sent; nothing about you or your library." />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="UpdateButton" Content="Check for updates" />
+            <Button x:Name="UpdateOpenButton" Content="View the update" Classes="accent" IsVisible="False" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <TextBlock TextWrapping="Wrap"
+                 Text="Manage your PS5 dump and image collection, read PS5 packages, and build or convert images: exFAT, FFPKG, FFPFSC, ZArchive and debug packages (FPKG)." />
+
+      <Border Classes="card">
+        <StackPanel Spacing="6">
+          <TextBlock Text="BUILT WITH" Classes="section" />
+          <TextBlock TextWrapping="Wrap" Text="Packwright grew out of PS5 PKG Tool by pearlxcore (GPL-3.0). Its image and package engines still power parts of this app. Thank you, pearlxcore." />
+          <TextBlock TextWrapping="Wrap" Text="ProsperoPkgTool by pearlxcore (MIT), the clean room package engine" />
+          <TextBlock TextWrapping="Wrap" Text="LibProsperoPkg and UFS2Tool by SvenGDK (GPL-3.0-or-later / BSD 2-Clause)" />
+          <TextBlock TextWrapping="Wrap" Text="MkPFS by PSBrew / Renan Barreto, ps5-exfat-builder by kerrdec97, PS5-Dump-Image-Converter by strongt1me" />
+          <TextBlock TextWrapping="Wrap" Text="ZArchive format by Exzap (MIT), zstd via ZstdSharp (MIT)" />
+          <TextBlock TextWrapping="Wrap" Text="PS5 title list by andshrew (MIT), used for Title ID lookups" />
+          <TextBlock TextWrapping="Wrap" Text="Avalonia UI (MIT), ImageSharp, BCnEncoder.Net, Magick.NET" />
+        </StackPanel>
+      </Border>
+
+      <TextBlock TextWrapping="Wrap" Classes="muted" FontSize="12"
+                 Text="Copyright (c) 2026 itsmemac. Licensed under the GNU General Public License v3.0, with no warranty. See LICENSE and THIRD_PARTY_NOTICES.md for every component and its terms. PlayStation and PS5 are trademarks of Sony Interactive Entertainment Inc.; this project is independent and not affiliated with Sony. This is not software for obtaining free PS5 games." />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="RepoButton" Content="Project page" Classes="accent" />
+        <Button x:Name="IssuesButton" Content="Report a bug" />
+        <Button x:Name="LicenseButton" Content="License" />
+        <Button x:Name="NoticesButton" Content="Open notices" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

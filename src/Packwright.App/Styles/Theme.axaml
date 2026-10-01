@@ -1,0 +1,457 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Dark">
+          <Color x:Key="AppBgColor">#0D0F17</Color>
+          <Color x:Key="PanelBgColor">#131622</Color>
+          <Color x:Key="CardBgColor">#1A1E2E</Color>
+          <Color x:Key="CardHoverColor">#222741</Color>
+          <Color x:Key="InputBgColor">#10131D</Color>
+          <Color x:Key="LineColor">#2A2F47</Color>
+          <Color x:Key="MutedColor">#8E94AE</Color>
+          <Color x:Key="TextColor">#EEF0FA</Color>
+          <Color x:Key="AccentColor">#7C8CFF</Color>
+          <Color x:Key="AccentDeepColor">#5B6BF0</Color>
+          <Color x:Key="AccentSoftColor">#267C8CFF</Color>
+          <Color x:Key="SuccessColor">#3DD68C</Color>
+          <Color x:Key="WarnColor">#F5B642</Color>
+          <Color x:Key="DangerColor">#FF6B7A</Color>
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Light">
+          <Color x:Key="AppBgColor">#F3F4FA</Color>
+          <Color x:Key="PanelBgColor">#FFFFFF</Color>
+          <Color x:Key="CardBgColor">#FFFFFF</Color>
+          <Color x:Key="CardHoverColor">#EEF0FB</Color>
+          <Color x:Key="InputBgColor">#F6F7FC</Color>
+          <Color x:Key="LineColor">#DDE0EE</Color>
+          <Color x:Key="MutedColor">#6A7090</Color>
+          <Color x:Key="TextColor">#161A2B</Color>
+          <Color x:Key="AccentColor">#4F5FE8</Color>
+          <Color x:Key="AccentDeepColor">#3B4BD6</Color>
+          <Color x:Key="AccentSoftColor">#1F4F5FE8</Color>
+          <Color x:Key="SuccessColor">#1FA46A</Color>
+          <Color x:Key="WarnColor">#C98A10</Color>
+          <Color x:Key="DangerColor">#D9414F</Color>
+        </ResourceDictionary>
+
+      </ResourceDictionary.ThemeDictionaries>
+
+      <SolidColorBrush x:Key="AppBg" Color="{DynamicResource AppBgColor}" />
+      <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource PanelBgColor}" />
+      <SolidColorBrush x:Key="CardBg" Color="{DynamicResource CardBgColor}" />
+      <SolidColorBrush x:Key="CardHover" Color="{DynamicResource CardHoverColor}" />
+      <SolidColorBrush x:Key="InputBg" Color="{DynamicResource InputBgColor}" />
+      <SolidColorBrush x:Key="Line" Color="{DynamicResource LineColor}" />
+      <SolidColorBrush x:Key="Muted" Color="{DynamicResource MutedColor}" />
+      <SolidColorBrush x:Key="Text" Color="{DynamicResource TextColor}" />
+      <SolidColorBrush x:Key="Accent" Color="{DynamicResource AccentColor}" />
+      <SolidColorBrush x:Key="AccentDeep" Color="{DynamicResource AccentDeepColor}" />
+      <SolidColorBrush x:Key="AccentSoft" Color="{DynamicResource AccentSoftColor}" />
+      <SolidColorBrush x:Key="Success" Color="{DynamicResource SuccessColor}" />
+      <SolidColorBrush x:Key="Warn" Color="{DynamicResource WarnColor}" />
+      <SolidColorBrush x:Key="Danger" Color="{DynamicResource DangerColor}" />
+      <LinearGradientBrush x:Key="AccentGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="{DynamicResource AccentColor}" />
+        <GradientStop Offset="1" Color="{DynamicResource AccentDeepColor}" />
+      </LinearGradientBrush>
+
+      <!-- Fluent control resources, pointed at the palette above -->
+      <StaticResource x:Key="TextControlBackground" ResourceKey="InputBg" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="InputBg" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="InputBg" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Accent" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Accent" />
+      <StaticResource x:Key="ComboBoxBackground" ResourceKey="InputBg" />
+      <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="InputBg" />
+      <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="InputBg" />
+      <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="Accent" />
+      <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="Accent" />
+      <StaticResource x:Key="ComboBoxBorderBrushFocused" ResourceKey="Accent" />
+      <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="ButtonBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="CardHover" />
+      <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="AccentSoft" />
+      <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Accent" />
+      <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Accent" />
+      <StaticResource x:Key="ButtonForeground" ResourceKey="Text" />
+      <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="Text" />
+      <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="Text" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Accent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="AccentDeep" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="Accent" />
+      <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="Accent" />
+      <StaticResource x:Key="ProgressBarForeground" ResourceKey="Accent" />
+      <StaticResource x:Key="ProgressBarBackground" ResourceKey="Line" />
+      <StaticResource x:Key="ExpanderBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ExpanderHeaderBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ExpanderContentBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ExpanderBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="ExpanderContentBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="ListBoxBackground" ResourceKey="CardBg" />
+      <!-- No white/black focus box around the current row or cell: selection is shown by colour instead -->
+      <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="DataGridCurrencyVisualPrimaryBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="DataGridRowSelectedBackgroundBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="Selection" Color="{DynamicResource AccentColor}" Opacity="0.26" />
+      <SolidColorBrush x:Key="ScrollThumb" Color="{DynamicResource AccentColor}" Opacity="0.45" />
+      <SolidColorBrush x:Key="ScrollThumbHover" Color="{DynamicResource AccentColor}" Opacity="0.75" />
+      <StaticResource x:Key="ScrollBarThumbFill" ResourceKey="ScrollThumb" />
+      <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="ScrollThumbHover" />
+      <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="Accent" />
+      <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="InputBg" />
+      <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="InputBg" />
+      <StaticResource x:Key="ScrollBarTrackStroke" ResourceKey="Line" />
+      <StaticResource x:Key="ScrollBarTrackStrokePointerOver" ResourceKey="Line" />
+      <StaticResource x:Key="ContextMenuBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="ContextMenuBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="CardBg" />
+      <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="Line" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelected" ResourceKey="Text" />
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <!-- Scroll bars stay in view (no auto-hide), with a rounded thumb in the accent colour. -->
+  <Style Selector="ScrollBar">
+    <Setter Property="AllowAutoHide" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar:horizontal">
+    <Setter Property="Height" Value="14" />
+  </Style>
+  <Style Selector="ScrollBar:vertical">
+    <Setter Property="Width" Value="14" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="CornerRadius" Value="7" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb /template/ Border">
+    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="Margin" Value="2" />
+  </Style>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource AppBg}" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- Typography -->
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.h">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+  </Style>
+
+  <!-- Surfaces -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="18" />
+  </Style>
+  <!-- The details panel when it slides over a narrow library -->
+  <Style Selector="Border.drawer">
+    <Setter Property="BoxShadow" Value="-10 0 30 0 #80000000" />
+  </Style>
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource PanelBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+  </Style>
+  <Style Selector="Border.pill">
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+  </Style>
+  <Style Selector="Border.pill > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+  </Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.accent">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentGradient}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentDeep}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentDeep}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CardHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+  </Style>
+
+  <!-- Sidebar navigation -->
+  <Style Selector="RadioButton.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Margin" Value="0,2" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border x:Name="Bar" Width="3" Height="18" CornerRadius="2" Margin="-12,0,9,0" Background="Transparent" />
+            <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.nav:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource CardHover}" />
+  </Style>
+  <Style Selector="RadioButton.nav:checked /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+  </Style>
+  <Style Selector="RadioButton.nav:checked /template/ Border#Bar">
+    <Setter Property="Background" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="RadioButton.nav:checked">
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+  <!-- Icons are Material paths drawn on a 24x24 grid. Drawing them at their native position in a fixed 24x24 box
+       (then scaled down a little) keeps every icon the same size and optically centred, whatever its shape. -->
+  <Style Selector="Path.icon">
+    <Setter Property="Fill" Value="{Binding $parent[TemplatedControl].Foreground}" />
+    <Setter Property="Stretch" Value="None" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="RenderTransform" Value="scale(0.8)" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Inputs -->
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="11,8" />
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="11,7" />
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+  <Style Selector="NumericUpDown">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+
+  <!-- Segmented pill tabs (detail panel) -->
+  <Style Selector="TabControl.pills">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="TabControl.pills TabItem">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="11,6" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Margin" Value="0,0,4,4" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+  </Style>
+  <Style Selector="TabControl.pills TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="TabControl.pills TabItem /template/ Border#PART_SelectedPipe">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
+  <!-- Filter chips -->
+  <Style Selector="RadioButton.chip, ToggleButton.chip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="13,6" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.chip:pointerover /template/ Border#Root, ToggleButton.chip:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource CardHover}" />
+  </Style>
+  <Style Selector="RadioButton.chip:checked /template/ Border#Root, ToggleButton.chip:checked /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="RadioButton.chip:checked, ToggleButton.chip:checked">
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+  </Style>
+
+  <!-- Artwork cards -->
+  <Style Selector="ListBox.cards">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ItemsPanel">
+      <ItemsPanelTemplate>
+        <WrapPanel />
+      </ItemsPanelTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.cards > ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,14,14" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{DynamicResource CardBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ListBox.cards > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CardHover}" />
+  </Style>
+  <Style Selector="ListBox.cards > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+
+  <!-- Progress bars: visible track, filled indicator -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    <Setter Property="Background" Value="{DynamicResource Line}" />
+    <Setter Property="MinHeight" Value="8" />
+    <Setter Property="Height" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="ProgressBar /template/ Border#PART_Indicator">
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+
+  <!-- Lists and grid -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Margin" Value="0,1" />
+  </Style>
+  <Style Selector="ListBox, ListBoxItem, TreeView, TreeViewItem, DataGrid, DataGridRow, DataGridCell">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Selection}" />
+  </Style>
+  <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource Selection}" />
+  </Style>
+  <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource CardHover}" />
+  </Style>
+  <Style Selector="DataGrid">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="RowHeight" Value="44" />
+    <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Line}" />
+  </Style>
+  <Style Selector="DataGridColumnHeader">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource Selection}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="DataGridCell /template/ Rectangle#CurrencyVisual">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="DataGridCell /template/ Grid#FocusVisual">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="DataGridRow /template/ Rectangle#CurrencyVisual, DataGridRow /template/ Grid#FocusVisual">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="DataGridRow /template/ Rectangle#InvalidVisualElement">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource CardHover}" />
+  </Style>
+  <Style Selector="DataGridCell">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="ScrollViewer">
+    <Setter Property="AllowAutoHide" Value="True" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+</Styles>

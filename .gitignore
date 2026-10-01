@@ -1,0 +1,9 @@
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+publish/
+
+# Locally built installers
+installer/out/

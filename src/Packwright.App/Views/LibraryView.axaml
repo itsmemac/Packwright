@@ -1,0 +1,311 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:Packwright.App.Views"
+             x:Class="Packwright.App.Views.LibraryView">
+  <Grid x:Name="LibraryRoot" ColumnDefinitions="*,Auto" ClipToBounds="True">
+
+    <!-- Main column -->
+    <Grid RowDefinitions="Auto,Auto,*">
+
+      <!-- Header -->
+      <Grid x:Name="HeaderGrid" Margin="32,26,24,10" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+        <StackPanel x:Name="HeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,10,0">
+            <RadioButton x:Name="CardsToggle" Classes="chip" GroupName="layout" Padding="7,6" Margin="0" CornerRadius="10"
+                         ToolTip.Tip="Cards">
+              <Path Classes="icon" Data="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
+            </RadioButton>
+            <RadioButton x:Name="ListToggle" Classes="chip" GroupName="layout" Padding="7,6" Margin="0" CornerRadius="10"
+                         ToolTip.Tip="List">
+              <Path Classes="icon" Data="M3 14h4v-4H3v4zm0 5h4v-4H3v4zM3 9h4V5H3v4zm5 5h13v-4H8v4zm0 5h13v-4H8v4zM8 5v4h13V5H8z" />
+            </RadioButton>
+          </StackPanel>
+          <Button x:Name="MoreButton" Content="More  ▾">
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem x:Name="MoreAddItem" Header="Add a package or image file..." />
+                <MenuItem Header="Export what is shown">
+                  <MenuItem x:Name="MoreExport" Header="As a CSV spreadsheet..." />
+                  <MenuItem x:Name="MoreExportJson" Header="As a JSON file..." />
+                  <MenuItem x:Name="MoreExportHtml" Header="As a web page with artwork..." />
+                </MenuItem>
+                <MenuItem x:Name="MoreFixMissing" Header="Fix missing details..." />
+                <MenuItem x:Name="MoreLookUpOnline" Header="Look up missing details online..." />
+                <MenuItem x:Name="MoreDuplicates" Header="Find duplicates" />
+                <MenuItem x:Name="MoreMissingBase" Header="Patches and DLC missing a base game" />
+                <MenuItem x:Name="MoreInstallOrder" Header="Rename packages by install order" />
+                <Separator />
+                <MenuItem x:Name="MoreColumns" Header="Columns (list view)" />
+                <MenuItem x:Name="MoreDeleteView" Header="Delete the current saved view" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <Button x:Name="RefreshButton" Content="Refresh" />
+          <Button x:Name="AddFolderButton" Content="Add folder" Classes="accent" />
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Library" Classes="title" />
+          <TextBlock x:Name="CountText" Classes="muted" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Filters -->
+      <Border Grid.Row="1" Classes="card" Margin="32,0,24,14" Padding="14">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox x:Name="SearchBox" Watermark="Search title, ID, path...   try  id:PPSA01 size:&gt;20GB -dlc" />
+            <Button x:Name="ClearFiltersButton" Grid.Column="1" Content="Reset" Classes="ghost" Margin="8,0,0,0" />
+          </Grid>
+          <WrapPanel>
+            <RadioButton x:Name="PresetAll" Classes="chip" GroupName="preset" Content="All" IsChecked="True" Margin="0,0,6,8" />
+            <RadioButton x:Name="PresetGames" Classes="chip" GroupName="preset" Content="Games" Margin="0,0,6,8" />
+            <RadioButton x:Name="PresetUpdates" Classes="chip" GroupName="preset" Content="Updates" Margin="0,0,6,8" />
+            <RadioButton x:Name="PresetDlc" Classes="chip" GroupName="preset" Content="DLC" Margin="0,0,14,8" />
+            <ComboBox x:Name="FormatFilter" Width="136" Margin="0,0,8,8" />
+            <ComboBox x:Name="RegionFilter" Width="136" Margin="0,0,8,8" />
+            <ComboBox x:Name="GroupBox" Width="150" Margin="0,0,8,8" />
+            <ComboBox x:Name="SortBox" Width="124" Margin="0,0,6,8" />
+            <ToggleButton x:Name="SortDirection" Classes="chip" Content="A → Z" MinWidth="64" Margin="0,0,14,8" />
+            <ComboBox x:Name="ViewsBox" Width="150" Margin="0,0,4,8" />
+            <Button x:Name="SaveViewButton" Content="Save view" Classes="ghost" Margin="0,0,0,8" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Content -->
+      <Panel Grid.Row="2">
+        <ScrollViewer x:Name="CardsScroll" Margin="32,0,10,0">
+          <ItemsControl x:Name="GroupsHost" Margin="0,0,14,24">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="0,0,0,6">
+                  <StackPanel Orientation="Horizontal" Spacing="10" Margin="2,4,0,12" IsVisible="{Binding ShowHeader}">
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
+                    <Border Classes="pill"><TextBlock Text="{Binding Count}" /></Border>
+                  </StackPanel>
+                  <ListBox Classes="cards" ItemsSource="{Binding Items}" SelectionMode="Multiple"
+                           SelectionChanged="OnCardsSelectionChanged" DoubleTapped="OnItemDoubleTapped">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Width="178">
+                          <Border Height="178" CornerRadius="13,13,0,0" ClipToBounds="True" Background="{DynamicResource InputBg}">
+                            <Panel>
+                              <Path Data="M12 2 3 7v10l9 5 9-5V7l-9-5zm0 2.2L18.6 8 12 11.8 5.4 8 12 4.2zM5 9.7l6 3.4v6.6l-6-3.4V9.7zm14 0v6.6l-6 3.4v-6.6l6-3.4z"
+                                    Fill="{DynamicResource Muted}" Opacity="0.35" Width="46" Height="46" Stretch="Uniform"
+                                    IsVisible="{Binding !HasThumbnail}" />
+                              <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                            </Panel>
+                          </Border>
+                          <StackPanel Margin="12,10,12,12" Spacing="5">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2"
+                                       TextTrimming="CharacterEllipsis" MinHeight="34" />
+                            <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" />
+                            <WrapPanel>
+                              <Border Classes="pill" Margin="0,2,6,0"><TextBlock Text="{Binding Role}" /></Border>
+                              <Border Classes="pill" Margin="0,2,6,0"><TextBlock Text="{Binding Format}" /></Border>
+                              <Border Classes="pill" Margin="0,2,6,0" Background="#33F5B642" IsVisible="{Binding HasMissing}"
+                                      ToolTip.Tip="{Binding MissingText}">
+                                <TextBlock Text="Missing details" Foreground="#F5B642" />
+                              </Border>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding SizeText}" Classes="muted" FontSize="11" />
+                          </StackPanel>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ContextMenu>
+                      <ContextMenu Opening="OnContextMenuOpening">
+                        <MenuItem Header="Convert / Build in Tools..." Click="OnMenuConvert" />
+                        <MenuItem Header="Edit details and icon..." Click="OnMenuEdit" />
+                        <MenuItem Header="Send to console..." Click="OnMenuSend" />
+                        <MenuItem Header="Show in file manager" Click="OnMenuReveal" />
+                        <MenuItem Header="Rename" />
+                        <MenuItem Header="Move to folder..." Click="OnMenuMove" />
+                        <MenuItem Header="Delete..." Click="OnMenuDelete" />
+                        <Separator />
+                        <MenuItem Header="Copy Title ID" Click="OnMenuCopyId" />
+                        <MenuItem Header="Copy Content ID" Click="OnMenuCopyContent" />
+                        <MenuItem Header="Copy path" Click="OnMenuCopyPath" />
+                      </ContextMenu>
+                    </ListBox.ContextMenu>
+                  </ListBox>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <ScrollViewer x:Name="ListScroll" Margin="24,0,10,0" IsVisible="False" HorizontalScrollBarVisibility="Visible"
+                      VerticalScrollBarVisibility="Disabled">
+        <DataGrid x:Name="ListGrid" Margin="0,0,0,16" IsReadOnly="True" AutoGenerateColumns="False"
+                  CanUserSortColumns="True" CanUserResizeColumns="True" CanUserReorderColumns="True"
+                  SelectionMode="Extended" GridLinesVisibility="Horizontal" RowHeight="52"
+                  HorizontalScrollBarVisibility="Disabled">
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Title" Width="320" SortMemberPath="Title">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12" Margin="6,0">
+                    <Border Width="38" Height="38" CornerRadius="8" ClipToBounds="True" Background="{DynamicResource InputBg}">
+                      <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding TitleId}" Classes="muted" FontSize="11" IsVisible="{Binding HasTitleId}" />
+                      <TextBlock Text="Missing details" Foreground="#F5B642" FontSize="11" IsVisible="{Binding !HasTitleId}"
+                                 ToolTip.Tip="{Binding MissingText}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="110" />
+            <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="100" />
+            <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="100" />
+            <DataGridTextColumn Header="Region" Binding="{Binding Region}" Width="110" />
+            <DataGridTextColumn Header="Format" Binding="{Binding Format}" Width="110" />
+            <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="100" />
+            <DataGridTextColumn Header="Firmware" Binding="{Binding Firmware}" Width="100" />
+            <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="400" MinWidth="240" />
+          </DataGrid.Columns>
+          <DataGrid.ContextMenu>
+            <ContextMenu Opening="OnContextMenuOpening">
+              <MenuItem Header="Convert / Build in Tools..." Click="OnMenuConvert" />
+              <MenuItem Header="Edit details and icon..." Click="OnMenuEdit" />
+              <MenuItem Header="Send to console..." Click="OnMenuSend" />
+              <MenuItem Header="Show in file manager" Click="OnMenuReveal" />
+              <MenuItem Header="Rename" />
+              <MenuItem Header="Move to folder..." Click="OnMenuMove" />
+              <MenuItem Header="Delete..." Click="OnMenuDelete" />
+              <Separator />
+              <MenuItem Header="Copy Title ID" Click="OnMenuCopyId" />
+              <MenuItem Header="Copy Content ID" Click="OnMenuCopyContent" />
+              <MenuItem Header="Copy path" Click="OnMenuCopyPath" />
+            </ContextMenu>
+          </DataGrid.ContextMenu>
+        </DataGrid>
+        </ScrollViewer>
+
+        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" IsVisible="False">
+          <TextBlock x:Name="EmptyTitle" Text="Your library is empty" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock x:Name="EmptyHint" Text="Add a folder with PS5 dumps, images or packages to get started." Classes="muted" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Panel>
+    </Grid>
+
+    <!-- Details -->
+    <Border x:Name="DetailHost" Grid.Column="1" Width="470" Classes="panel" BorderThickness="1,0,0,0">
+      <Panel>
+        <Button x:Name="DetailClose" ZIndex="5" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,10,10,0" Padding="9" CornerRadius="10" Background="#99000000" BorderThickness="0"
+                ToolTip.Tip="Close (Esc)">
+          <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                Fill="White" Width="12" Height="12" Stretch="Uniform" />
+        </Button>
+        <StackPanel x:Name="DetailEmpty" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Width="300">
+          <TextBlock Text="Select a game" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock Text="Artwork, trophies, files and raw metadata show up here." Classes="muted"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+        </StackPanel>
+
+        <Grid x:Name="DetailContent" RowDefinitions="Auto,*" IsVisible="False">
+          <Grid Height="190">
+            <Image x:Name="BannerImage" Stretch="UniformToFill" Opacity="0.55" />
+            <Border>
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                  <GradientStop Offset="0" Color="#00000000" />
+                  <GradientStop Offset="1" Color="{DynamicResource PanelBgColor}" />
+                </LinearGradientBrush>
+              </Border.Background>
+            </Border>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="20,0,20,0" Spacing="16">
+              <Border Width="104" Height="104" CornerRadius="16" ClipToBounds="True" Background="{DynamicResource InputBg}"
+                      BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                <Image x:Name="IconImage" Stretch="UniformToFill" />
+              </Border>
+              <StackPanel VerticalAlignment="Bottom" Spacing="4" Margin="0,0,0,4" MaxWidth="290">
+                <TextBlock x:Name="DetailTitle" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" />
+                <TextBlock x:Name="DetailSub" Classes="muted" TextWrapping="Wrap" />
+                <Button x:Name="EditDetailsButton" HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" CornerRadius="9"
+                        Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
+                        ToolTip.Tip="Fix the title, IDs, firmware or icon">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Path Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                          Fill="{DynamicResource Accent}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="Edit details" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+
+          <TabControl Grid.Row="1" x:Name="DetailTabs" Classes="pills" Margin="16,12,16,12">
+            <TabItem Header="Overview">
+              <ScrollViewer>
+                <ItemsControl x:Name="OverviewList" Margin="2,8,8,8">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="130,*" Margin="0,4">
+                        <TextBlock Text="{Binding Label}" Classes="muted" />
+                        <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Artwork">
+              <ScrollViewer><StackPanel x:Name="ArtworkPanel" Margin="2,8,8,8" Spacing="10" /></ScrollViewer>
+            </TabItem>
+            <TabItem Header="Trophies">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                  <Button x:Name="ExportTrophiesButton" Content="Export trophy icons..." />
+                  <TextBlock x:Name="TrophySummary" VerticalAlignment="Center" Classes="muted" />
+                </StackPanel>
+                <ListBox x:Name="TrophyList">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="48,*" Margin="0,4">
+                        <Image Source="{Binding Icon}" Width="40" Height="40" />
+                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Grade}" Foreground="{DynamicResource Accent}" FontSize="11" />
+                        </StackPanel>
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </DockPanel>
+            </TabItem>
+            <TabItem Header="Files">
+              <v:FilesPanel x:Name="FilesPane" />
+            </TabItem>
+            <TabItem Header="Stats">
+              <TextBox x:Name="StatsText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+            <TabItem Header="Executable">
+              <TextBox x:Name="ExecutableText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+            <TabItem Header="Activities">
+              <TextBox x:Name="ActivitiesText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+            <TabItem Header="Package">
+              <TextBox x:Name="PackageText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+            <TabItem Header="Raw">
+              <TextBox x:Name="RawText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+          </TabControl>
+        </Grid>
+      </Panel>
+    </Border>
+  </Grid>
+</UserControl>

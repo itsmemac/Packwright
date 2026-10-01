@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.LogView">
+  <Grid RowDefinitions="Auto,*">
+    <DockPanel Margin="32,26,32,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <CheckBox x:Name="AutoScrollBox" Content="Auto-scroll" IsChecked="True" Margin="0,0,8,0" />
+        <Button x:Name="ClearButton" Content="Clear view" />
+        <Button x:Name="OpenLogButton" Content="Open log folder" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Log" Classes="title" />
+        <TextBlock Text="Live application log. The full file is kept on disk." Classes="muted" />
+      </StackPanel>
+    </DockPanel>
+    <Border Grid.Row="1" Classes="card" Margin="32,0,32,24" Padding="4">
+      <TextBox x:Name="LogText" IsReadOnly="True" AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+               FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+    </Border>
+  </Grid>
+</UserControl>

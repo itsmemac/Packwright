@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Packwright.App.Views.TasksView">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <DockPanel Margin="32,26,32,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <CheckBox x:Name="AutoStartBox" Content="Start automatically" IsChecked="True" Margin="0,0,8,0" />
+        <Button x:Name="RunQueueButton" Content="Run queue" IsVisible="False" />
+        <Button x:Name="CancelButton" Content="Cancel" />
+        <Button x:Name="RetryButton" Content="Retry" />
+        <Button x:Name="OpenButton" Content="Show output" />
+        <Button x:Name="RemoveButton" Content="Remove" />
+        <Button x:Name="ClearButton" Content="Clear completed" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Tasks" Classes="title" />
+        <TextBlock Text="Everything queued runs here, one job at a time." Classes="muted" />
+      </StackPanel>
+    </DockPanel>
+
+    <Panel Grid.Row="1">
+      <ListBox x:Name="TaskList" Margin="24,0,24,0" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="card" Padding="16,14" Margin="8,4">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Width="60" Height="60" CornerRadius="12" ClipToBounds="True" Margin="0,0,16,0"
+                        VerticalAlignment="Top" Background="{DynamicResource InputBg}">
+                  <Panel>
+                    <Path Data="M12 2 3 7v10l9 5 9-5V7l-9-5zm0 2.2L18.6 8 12 11.8 5.4 8 12 4.2zM5 9.7l6 3.4v6.6l-6-3.4V9.7zm14 0v6.6l-6 3.4v-6.6l6-3.4z"
+                          Fill="{DynamicResource Muted}" Opacity="0.35" Width="26" Height="26" Stretch="Uniform"
+                          IsVisible="{Binding !HasIcon}" />
+                    <Image Source="{Binding Icon}" Stretch="UniformToFill" />
+                  </Panel>
+                </Border>
+
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Operation}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                  <Grid ColumnDefinitions="44,*" Margin="0,4,0,0">
+                    <TextBlock Text="From" Classes="muted" FontSize="11" />
+                    <TextBlock Grid.Column="1" Text="{Binding Source}" FontSize="11" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Source}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="44,*" IsVisible="{Binding HasOutput}">
+                    <TextBlock Text="To" Classes="muted" FontSize="11" />
+                    <TextBlock Grid.Column="1" Text="{Binding Output}" FontSize="11" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Output}" />
+                  </Grid>
+                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" Foreground="{Binding BarBrush}"
+                               IsIndeterminate="{Binding Indeterminate}" Margin="0,10,0,4" />
+                  <TextBlock Text="{Binding Message}" FontSize="11" Classes="muted" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <Border Grid.Column="2" Classes="pill" VerticalAlignment="Top" Background="{Binding StatusBackground}">
+                  <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusForeground}" />
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+        <TextBlock Text="No tasks yet" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock Text="Convert, extract or verify something from the Tools page." Classes="muted" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Panel>
+
+    <Border Grid.Row="2" Classes="panel" BorderThickness="0,1,0,0" Padding="32,10">
+      <TextBlock x:Name="DetailText" TextWrapping="Wrap" Classes="muted" MinHeight="18" />
+    </Border>
+  </Grid>
+</UserControl>
