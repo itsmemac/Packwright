@@ -74,8 +74,19 @@
             <TextBlock Text="PACKAGE DEFAULTS" Classes="section" />
             <TextBlock Text="Default passcode" Classes="h" />
             <TextBox x:Name="PasscodeBox" Watermark="32 characters, blank = all zeros" MaxLength="32" />
-            <TextBlock Text="Preferred builder" Classes="h" Margin="0,6,0,6" />
-            <ComboBox x:Name="BackendBox" MinWidth="320" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="COMPATIBILITY KEYS (OPTIONAL)" Classes="section" />
+            <TextBlock Classes="muted" TextWrapping="Wrap"
+                       Text="Packwright ships no keys, and a package it builds is complete and readable without any. A few fields of a package are normally sealed with public RSA values by the original tools; if you have those values, import them here and Packwright uses them when it builds a package. Only public values are accepted; a file with a private key is refused." />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="ImportKeysButton" Content="Import key file..." />
+              <Button x:Name="RemoveKeysButton" Content="Remove" />
+            </StackPanel>
+            <TextBlock x:Name="KeysStatus" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 

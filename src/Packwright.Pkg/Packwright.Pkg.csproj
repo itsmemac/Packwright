@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AssemblyName>Packwright.Pkg</AssemblyName>
+    <RootNamespace>LibProsperoPkg</RootNamespace>
+    <Description>PS5 package reader. Portions based on LibProsperoPKG by SvenGDK (GPL-3.0-or-later).</Description>
+  </PropertyGroup>
+
+</Project>

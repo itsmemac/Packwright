@@ -21,7 +21,7 @@ public sealed class Ps5LibraryScanner
 {
     private readonly Ps5DumpLocator _locator = new();
     private readonly Ps5ParamReader _paramReader = new();
-    private readonly SonyPkgGameReader _packageReader = new();
+    private readonly Ps5PkgGameReader _packageReader = new();
     private readonly FfpfscGameReader _ffpfscReader = new();
     private readonly FilesystemImageGameReader _filesystemImageReader = new();
     private readonly FfpkgGameReader _ffpkgReader = new();
@@ -70,7 +70,7 @@ public sealed class Ps5LibraryScanner
 
         int processed = 0;
         var sources = paramPaths.Select(path => (Path: path, Kind: Ps5SourceKind.LooseDump))
-            .Concat(packagePaths.Select(path => (Path: path, Kind: Ps5SourceKind.SonyPackage)))
+            .Concat(packagePaths.Select(path => (Path: path, Kind: Ps5SourceKind.Ps5Package)))
             .Concat(ffpfscPaths.Select(path => (Path: path, Kind: Ps5SourceKind.Ffpfsc)))
             .Concat(filesystemImagePaths.Select(path => (Path: path, Kind: Ps5SourceKind.FilesystemImage)))
             .Concat(ffpkgPaths.Select(path => (Path: path, Kind: Ps5SourceKind.Ffpkg)))
@@ -102,7 +102,7 @@ public sealed class Ps5LibraryScanner
 
                 Ps5GameInfo game = kind switch
                 {
-                    Ps5SourceKind.SonyPackage => _packageReader.Read(path),
+                    Ps5SourceKind.Ps5Package => _packageReader.Read(path),
                     Ps5SourceKind.Ffpfsc => _ffpfscReader.Read(path),
                     Ps5SourceKind.FilesystemImage => _filesystemImageReader.Read(path),
                     Ps5SourceKind.Ffpkg => _ffpkgReader.Read(path),
@@ -128,6 +128,7 @@ public sealed class Ps5LibraryScanner
             }
             processed++;
         }
+        ComputeDumpSizes(result.Games, cancellationToken);
         progress?.Report(new Ps5ScanProgress { Processed = processed, Total = sources.Length });
         result.Games.Sort((left, right) => StringComparer.CurrentCultureIgnoreCase.Compare(left.Title, right.Title));
         return result;
@@ -156,8 +157,56 @@ public sealed class Ps5LibraryScanner
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException)
         {
         }
-        string label = kind == Ps5SourceKind.SonyPackage ? "package" : "image";
+        string label = kind == Ps5SourceKind.Ps5Package ? "package" : "image";
         return SourceStructure.Unreadable(kind, path, label, error);
+    }
+
+    /// <summary>
+    /// A loose dump has no single file to measure, so its size is the sum of its files. The scan lists dumps
+    /// first and measures them here, a few at a time and without opening any file, so every library card has
+    /// a size from the start instead of only after its details were opened.
+    /// </summary>
+    private static void ComputeDumpSizes(List<Ps5GameInfo> games, CancellationToken cancellationToken)
+    {
+        List<Ps5GameInfo> pending = games
+            .Where(game => game.SourceKind == Ps5SourceKind.LooseDump && game.SourceSize <= 0 &&
+                           Directory.Exists(game.RootPath))
+            .ToList();
+        if (pending.Count == 0) return;
+
+        Parallel.ForEach(pending,
+            new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken },
+            game => game.SourceSize = SumFileSizes(game.RootPath, cancellationToken));
+    }
+
+    private static long SumFileSizes(string root, CancellationToken cancellationToken)
+    {
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            ReturnSpecialDirectories = false
+        };
+        var sizes = new System.IO.Enumeration.FileSystemEnumerable<long>(root,
+            (ref System.IO.Enumeration.FileSystemEntry entry) => entry.Length, options)
+        {
+            ShouldIncludePredicate = (ref System.IO.Enumeration.FileSystemEntry entry) => !entry.IsDirectory
+        };
+        long total = 0;
+        try
+        {
+            foreach (long length in sizes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                total += length;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Report what could be counted rather than failing the scan over one unreadable folder.
+        }
+        return total;
     }
 
     private static string ResolveRootPath(string path, Ps5SourceKind kind)

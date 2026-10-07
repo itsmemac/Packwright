@@ -29,7 +29,7 @@ internal static class Cli
     private static readonly HashSet<string> ValueOptions = new(StringComparer.OrdinalIgnoreCase)
     {
         "to", "o", "output", "preset", "passcode", "level", "gain", "cluster", "block", "fragment", "density", "min-free",
-        "compression", "kraken-level", "threads", "playgo", "drm", "builder", "workspace", "format", "folder", "host", "port", "user", "password"
+        "compression", "kraken-level", "threads", "playgo", "drm", "format", "folder", "host", "port", "user", "password"
     };
 
     public static bool IsCommand(string[] args) =>
@@ -169,8 +169,8 @@ internal static class Cli
               --level 1-9  --gain 0-100            FFPFSC compression
               --cluster 32|64  --no-ampr           exFAT
               --block 32|64  --fragment 4|64  --density 256|512|1024  --min-free 0-50    FFPKG
-              --builder <id>  --compression auto|kraken|stored  --kraken-level N  --threads N  --playgo N
-              --deterministic  --no-fake-sign  --no-right-sprx  --drm upgradable|free|standard|keep  --workspace <folder>
+              --compression auto|kraken|stored  --kraken-level N  --threads N  --playgo N
+              --deterministic  --drm upgradable|free|standard|keep
             extract/verify on a package: --passcode <32 characters>   (default: the debug passcode)
 
             Exit codes: 0 done, 1 failed, 2 wrong usage, 130 cancelled.
@@ -433,9 +433,10 @@ internal static class Cli
         {
             string contentId = Jobs.ReadContentId(spec.Source, format);
             if (contentId.Length == 0) return "The source has no content ID (sce_sys/param.json), so a package cannot be built from it.";
+            Console.Error.WriteLine("Note: packages are experimental. They are verified on this PC but not tested on a console; exFAT and FFPKG images are the better-tested route.");
             spec.Kind = JobSpec.BuildPackage;
             spec.ContentId = contentId;
-            spec.Backend = (options.Get("builder") ?? (basis.Backend.Length > 0 ? basis.Backend : AppSettingsDefaultBackend())).Trim();
+            spec.Backend = BackendRegistry.DefaultId;
             spec.Compression = (Choice("compression") switch
             {
                 "kraken" => Ps5InnerCompression.Kraken,
@@ -445,22 +446,17 @@ internal static class Cli
             }).ToString();
             spec.KrakenLevel = Math.Clamp(Pick("kraken-level", basis.KrakenLevel), -4, 9);
             spec.KrakenThreads = Math.Clamp(Pick("threads", basis.KrakenThreads), 0, 64);
-            spec.PlayGoChunks = Math.Clamp(Pick("playgo", basis.PlayGoChunks), 1, 64);
+            spec.PlayGoChunks = Math.Clamp(Pick("playgo", 1), 1, 64);
             spec.Deterministic = options.Has("deterministic") || basis.Deterministic;
-            spec.FakeSign = !options.Has("no-fake-sign") && basis.FakeSign;
-            spec.RightSprx = !options.Has("no-right-sprx") && basis.RightSprx;
             spec.Drm = (Choice("drm") ?? basis.DrmIndex switch { 1 => "free", 2 => "standard", 3 => "keep", _ => "upgradable" }) switch
             { "free" => "free", "standard" => "standard", "keep" => null, _ => "upgradable" };
             spec.Sdk = basis.Sdk.Length > 0 ? SdkFromVersion(basis.Sdk) : null;
-            spec.TempDirectory = options.Get("workspace") ?? (basis.TempDirectory.Length > 0 ? basis.TempDirectory : null);
             return null;
         }
         spec.Kind = JobSpec.Convert;
         spec.Target = target.Value.Name;
         return null;
     }
-
-    private static string AppSettingsDefaultBackend() => new AppStateStore().LoadSettings().BuildBackend;
 
     private static ulong? SdkFromVersion(string version)
     {

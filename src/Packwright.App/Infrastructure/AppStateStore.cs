@@ -128,8 +128,11 @@ public sealed class AppSettings
     // Build defaults
     public string DebugPasscode { get; set; } = string.Empty;
 
-    /// <summary>Selected package backend id ("lpp" or "ppt"). Empty/unknown falls back to the default.</summary>
+    /// <summary>Kept so settings written by older versions still load; the package engine is no longer selectable.</summary>
     public string BuildBackend { get; set; } = string.Empty;
+
+    /// <summary>Path of the imported compatibility key file (a copy kept in the app data folder), or empty.</summary>
+    public string KeyFile { get; set; } = string.Empty;
 
     // Updates (nothing is checked until the user allows it)
     public bool CheckForUpdates { get; set; }

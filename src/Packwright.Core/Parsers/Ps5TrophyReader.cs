@@ -11,17 +11,55 @@ public sealed class Ps5TrophyReader
 
     public Ps5TrophySet? Read(string gameRoot, string preferredLanguage, CancellationToken cancellationToken = default)
     {
-        string path = Path.Combine(gameRoot, "sce_sys", "trophy2", "trophy00.ucp");
-        if (!File.Exists(path)) return null;
+        string? path = FindArchive(gameRoot);
+        if (path is null) return null;
         UcpArchive archive = _ucp.Read(path);
         return ReadArchive(archive, preferredLanguage, cancellationToken);
+    }
+
+    // The usual file is sce_sys/trophy2/trophy00.ucp. Some titles name it differently or keep it in the older
+    // sce_sys/trophy folder, so fall back to the lowest-numbered trophy archive found there.
+    private static string? FindArchive(string gameRoot)
+    {
+        string preferred = Path.Combine(gameRoot, "sce_sys", "trophy2", "trophy00.ucp");
+        if (File.Exists(preferred)) return preferred;
+        foreach (string folder in new[] { "trophy2", "trophy" })
+        {
+            string directory = Path.Combine(gameRoot, "sce_sys", folder);
+            if (!Directory.Exists(directory)) continue;
+            string? found = Directory.EnumerateFiles(directory, "trophy*.ucp")
+                .OrderBy(file => file, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
+    private static string? FindArchive(IReadOnlyGameFileSystem files)
+    {
+        const string preferred = "sce_sys/trophy2/trophy00.ucp";
+        if (files.FileExists(preferred)) return preferred;
+        return files.Files.Select(file => file.RelativePath)
+            .Where(IsTrophyArchive)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+    }
+
+    private static bool IsTrophyArchive(string path)
+    {
+        string[] parts = path.Split('/');
+        return parts.Length == 3 &&
+               parts[0].Equals("sce_sys", StringComparison.OrdinalIgnoreCase) &&
+               (parts[1].Equals("trophy2", StringComparison.OrdinalIgnoreCase) ||
+                parts[1].Equals("trophy", StringComparison.OrdinalIgnoreCase)) &&
+               parts[2].StartsWith("trophy", StringComparison.OrdinalIgnoreCase) &&
+               parts[2].EndsWith(".ucp", StringComparison.OrdinalIgnoreCase);
     }
 
     public Ps5TrophySet? Read(IReadOnlyGameFileSystem files, string preferredLanguage,
         CancellationToken cancellationToken = default)
     {
-        const string path = "sce_sys/trophy2/trophy00.ucp";
-        if (!files.FileExists(path)) return null;
+        string? path = FindArchive(files);
+        if (path is null) return null;
         UcpArchive archive = _ucp.Read(path, () => files.OpenRead(path));
         return ReadArchive(archive, preferredLanguage, cancellationToken);
     }
@@ -109,7 +147,14 @@ public sealed class Ps5TrophyReader
         if (Exists(preferred)) return preferred;
         if (Exists(fallback)) return fallback;
         if (Exists("en-US")) return "en-US";
-        return languages.FirstOrDefault(Exists) ?? string.Empty;
+        if (languages.FirstOrDefault(Exists) is { } listed) return listed;
+
+        // Last resort: any localized metadata the archive actually contains.
+        const string prefix = "tropmeta_", suffix = ".json";
+        UcpEntry? any = archive.Entries.FirstOrDefault(entry =>
+            entry.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+            entry.Name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase));
+        return any is null ? string.Empty : any.Name[prefix.Length..^suffix.Length];
     }
 
     private static Dictionary<string, (string Name, string Description)> ReadLocalizedMetadata(JsonElement root)

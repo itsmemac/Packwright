@@ -51,7 +51,7 @@ public static class SourceInfo
             return File.Exists(param) ? new Ps5ParamReader().Read(param) : null;
         }
         if (!File.Exists(path)) return null;
-        if (path.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase)) return new SonyPkgGameReader().Read(path);
+        if (path.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase)) return new Ps5PkgGameReader().Read(path);
         return Ps5ImageFormatProbeLookup(path);
     }
 

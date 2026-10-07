@@ -37,17 +37,11 @@ public partial class ToolsView : UserControl
     private Ps5ImageFormat _format;
     private bool _isPackage;
     private bool _isDirectory;
-    private SonyPkgKind? _packageKind;
+    private Ps5PkgKind? _packageKind;
 
     public ToolsView()
     {
         InitializeComponent();
-        BackendBox.ItemsSource = BackendRegistry.All.Select(backend =>
-            backend.Id == BackendRegistry.LppId && !Jobs.PlatformSupportsLpp
-                ? backend.DisplayName + " (Windows only)"
-                : backend.DisplayName).ToList();
-        BackendBox.SelectedIndex = Math.Max(0, BackendRegistry.All.ToList()
-            .FindIndex(backend => backend.Id == Jobs.ResolveBackend(_services.Settings.BuildBackend).Id));
         CompressionBox.ItemsSource = new[] { "Auto (Kraken where it helps)", "Kraken (force)", "Uncompressed" };
         CompressionBox.SelectedIndex = 0;
         DrmBox.ItemsSource = new[] { "Upgradable", "Free", "Standard", "Keep source" };
@@ -56,10 +50,6 @@ public partial class ToolsView : UserControl
         SdkBox.SelectedIndex = 0;
         KrakenLevelBox.ItemsSource = KrakenLevels.Select(level => level.Name).ToList();
         KrakenLevelBox.SelectedIndex = Array.FindIndex(KrakenLevels, level => level.Value == 7);
-        BrowseTempButton.Click += async (_, _) =>
-        {
-            if (await Dialogs.PickFolderAsync(this, "Workspace folder") is { } folder) TempBox.Text = folder;
-        };
         ClusterBox.ItemsSource = new[] { "Auto", "32 KB", "64 KB" };
         ClusterBox.SelectedIndex = 0;
         BlockBox.ItemsSource = new[] { "32 KB", "64 KB" };
@@ -147,7 +137,7 @@ public partial class ToolsView : UserControl
         _packageKind = null;
         if (_isPackage)
         {
-            try { _packageKind = new SonyPkgReader().Read(_source!).Kind; }
+            try { _packageKind = new Ps5PkgReader().Read(_source!).Kind; }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException
                                            or ArgumentException or NotSupportedException)
             {
@@ -159,8 +149,8 @@ public partial class ToolsView : UserControl
         SourceTitle.IsVisible = SourceIconHost.IsVisible = false;
         SourceIcon.Source = null;
         if (_source is not null) _ = LoadSummaryAsync(_source);
-        if (_isPackage && _packageKind is not null and not SonyPkgKind.FinalizedDebug)
-            ResultText.Text = _packageKind == SonyPkgKind.FinalizedPatch
+        if (_isPackage && _packageKind is not null and not Ps5PkgKind.FinalizedDebug)
+            ResultText.Text = _packageKind == Ps5PkgKind.FinalizedPatch
                 ? "Patch package: Convert, Extract and Verify need a finalized debug (FPKG) package."
                 : "Retail package: Convert, Extract and Verify need a debug (FPKG) package.";
         UpdateActions();
@@ -172,10 +162,10 @@ public partial class ToolsView : UserControl
         if (_isPackage)
             return _packageKind switch
             {
-                SonyPkgKind.FinalizedDebug => "debug package (FPKG)",
-                SonyPkgKind.FinalizedPatch => "patch package (LIH)",
-                SonyPkgKind.FinalizedRetail => "retail package",
-                SonyPkgKind.MetadataContainer => "CNT metadata",
+                Ps5PkgKind.FinalizedDebug => "debug package (FPKG)",
+                Ps5PkgKind.FinalizedPatch => "patch package (LIH)",
+                Ps5PkgKind.FinalizedRetail => "retail package",
+                Ps5PkgKind.MetadataContainer => "CNT metadata",
                 _ => "package"
             };
         return _format switch
@@ -196,7 +186,7 @@ public partial class ToolsView : UserControl
             if (_isDirectory) actions.Add(ActionConvert);
             else if (_isPackage)
             {
-                if (_packageKind == SonyPkgKind.FinalizedDebug) actions.AddRange([ActionConvert, ActionExtract, ActionVerify]);
+                if (_packageKind == Ps5PkgKind.FinalizedDebug) actions.AddRange([ActionConvert, ActionExtract, ActionVerify]);
             }
             else if (_format is Ps5ImageFormat.Exfat or Ps5ImageFormat.Ufs2 or Ps5ImageFormat.Pfs or Ps5ImageFormat.ZArchive)
             {
@@ -340,7 +330,7 @@ public partial class ToolsView : UserControl
     private string Passcode() =>
         !string.IsNullOrEmpty(PasscodeBox.Text) ? PasscodeBox.Text!
         : !string.IsNullOrEmpty(_services.Settings.DebugPasscode) ? _services.Settings.DebugPasscode
-        : SonyDebugPackageCredentials.DefaultPasscode;
+        : Ps5DebugPackageCredentials.DefaultPasscode;
 
     private async Task RunAsync()
     {
@@ -463,15 +453,9 @@ public partial class ToolsView : UserControl
                 "The source does not contain a content ID (sce_sys/param.json), so a package cannot be built from it.");
             return;
         }
-        IPackageBackend backend = BackendRegistry.All[Math.Max(0, BackendBox.SelectedIndex)];
-        if (backend.Id == BackendRegistry.LppId && !Jobs.PlatformSupportsLpp)
-        {
-            backend = BackendRegistry.Get(BackendRegistry.PptId);
-            StatusChanged?.Invoke("LibProsperoPkg is Windows only; using ProsperoPkgTool.");
-        }
         spec.Kind = JobSpec.BuildPackage;
         spec.ContentId = contentId;
-        spec.Backend = backend.Id;
+        spec.Backend = BackendRegistry.DefaultId;
         spec.Compression = (CompressionBox.SelectedIndex switch
         {
             1 => Ps5InnerCompression.Kraken,
@@ -480,27 +464,24 @@ public partial class ToolsView : UserControl
         }).ToString();
         spec.KrakenLevel = KrakenLevels[Math.Max(0, KrakenLevelBox.SelectedIndex)].Value;
         spec.KrakenThreads = (int)(KrakenThreadsBox.Value ?? 0);
-        spec.PlayGoChunks = (int)(PlayGoBox.Value ?? 1);
         spec.Deterministic = DeterministicBox.IsChecked == true;
-        spec.FakeSign = FakeSignBox.IsChecked == true;
-        spec.RightSprx = RightSprxBox.IsChecked == true;
+        spec.PlayGoChunks = (int)(PlayGoBox.Value ?? 1);
         spec.Drm = DrmBox.SelectedIndex switch { 0 => "upgradable", 1 => "free", 2 => "standard", _ => null };
         spec.Sdk = SdkBox.SelectedIndex > 0 ? Ps5SdkVersions.ExecutableVersionAt(SdkBox.SelectedIndex - 1) : null;
-        spec.TempDirectory = string.IsNullOrWhiteSpace(TempBox.Text) ? null : TempBox.Text!.Trim();
 
         // Free-space preflight before a long build; the engine re-checks exactly while it runs.
-        Ps5DiskSpaceCheck space = Ps5DiskSpace.Check(EstimatePayload(spec.Source), spec.Output, spec.TempDirectory);
+        Ps5DiskSpaceCheck space = Ps5DiskSpace.Check(EstimatePayload(spec.Source), spec.Output, null);
         if (space.Status == Ps5DiskSpaceStatus.Insufficient)
         {
             await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Build package",
                 "Not enough free disk space to build this package.\n\n" + space.Message +
-                "\n\nFree space, or choose a different workspace or output volume.");
+                "\n\nFree space, or choose a different output volume.");
             return;
         }
         if (space.Status == Ps5DiskSpaceStatus.NearLimit && !await Dialogs.ConfirmAsync(Dialogs.OwnerOf(this),
                 "Low disk space", "Low free disk space for this build.\n\n" + space.Message, "Build anyway"))
             return;
-        Enqueue(spec, $"Build package from {fileName}", "Build package", sourceLabel, "FPKG", backend.DisplayName);
+        Enqueue(spec, $"Build package from {fileName}", "Build package", sourceLabel, "FPKG", BackendRegistry.Default.DisplayName);
     }
 
     private static long EstimatePayload(string source)

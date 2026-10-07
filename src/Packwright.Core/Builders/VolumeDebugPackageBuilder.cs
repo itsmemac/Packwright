@@ -1,25 +1,17 @@
 using Packwright.Containers;
-using ProsperoPkgTool;
-using ProsperoPkgTool.Content;
-using ProsperoPkgTool.Containers;
-using ProsperoPkgTool.Gp5;
+using Packwright.Pkg.Writer;
 using UFS2Tool;
-using EngineBuildResult = ProsperoPkgTool.Containers.DebugPackageBuildResult;
-using EngineBuilder = ProsperoPkgTool.Containers.ProsperoDebugPackageBuilder;
-using EngineInnerFile = ProsperoPkgTool.Containers.ProsperoInnerImageAssembler.InnerFile;
 
 namespace Packwright.Core.Builders;
 
 /// <summary>
-/// Builds a PS5 debug package directly from a PS5 filesystem image (exFAT, UFS2/FFPKG or FFPFSC)
-/// without extracting it first. Each inner file is streamed to the engine through
-/// <see cref="IProsperoFileSource"/>, so only the small <c>sce_sys</c> metadata set and the
-/// fake-sign/UCP-repair targets are materialized.
+/// Builds a PS5 debug package directly from a PS5 filesystem image (exFAT, UFS2/FFPKG or FFPFSC) without extracting
+/// it first. Each file is streamed from the image into the package as it is written.
 /// </summary>
 public static class VolumeDebugPackageBuilder
 {
-    public static Task<SonyDebugPackageBuildResult> CreateFromImageAsync(string imagePath, string outputPath,
-        SonyDebugPackageBuildOptions options, IProgress<SonyDebugPackageProgress>? progress = null,
+    public static Task<Ps5DebugPackageBuildResult> CreateFromImageAsync(string imagePath, string outputPath,
+        Ps5DebugPackageBuildOptions options, IProgress<Ps5DebugPackageProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(imagePath);
@@ -29,127 +21,41 @@ public static class VolumeDebugPackageBuilder
             cancellationToken);
     }
 
-    private static SonyDebugPackageBuildResult CreateFromImage(string imagePath, string outputPath,
-        SonyDebugPackageBuildOptions options, IProgress<SonyDebugPackageProgress>? progress,
+    private static Ps5DebugPackageBuildResult CreateFromImage(string imagePath, string outputPath,
+        Ps5DebugPackageBuildOptions options, IProgress<Ps5DebugPackageProgress>? progress,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         string source = Path.GetFullPath(imagePath);
-        string destination = Path.GetFullPath(outputPath);
         if (!File.Exists(source)) throw new FileNotFoundException("The source image was not found.", source);
-
-        SonyDebugPackageCredentials credentials = SonyDebugPackageCredentials.Create(options.ContentId, options.Passcode);
-        progress?.Report(new SonyDebugPackageProgress("Detecting image format", 0, 0, Path.GetFileName(source)));
+        progress?.Report(new Ps5DebugPackageProgress("Detecting image format", 0, 0, Path.GetFileName(source)));
 
         using IDisposable volume = OpenVolume(source, out IReadOnlyList<VolumeFile> entries,
             out Func<string, Stream> open, out string formatName);
         string readStage = $"Reading {formatName} filesystem";
+        progress?.Report(new Ps5DebugPackageProgress(readStage, 0, entries.Count, Path.GetFileName(source)));
 
-        int totalEntries = entries.Count;
-        progress?.Report(new SonyDebugPackageProgress(readStage, 0, totalEntries,
-            Path.GetFileName(source)));
-
-        var files = new List<EngineInnerFile>();
-        var sceSys = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        var files = new List<PkgSourceFile>();
+        var directories = new List<string>();
         long sourceBytes = 0;
-        int sourceFiles = 0;
-        int processedEntries = 0;
-
+        int processed = 0;
         foreach (VolumeFile entry in entries.OrderBy(item => item.Path, StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            progress?.Report(new SonyDebugPackageProgress(readStage, ++processedEntries,
-                totalEntries, entry.Path));
-            if (entry.IsDirectory || entry.IsSymlink) continue;
-            sourceBytes += entry.Size;
-            sourceFiles++;
-
+            progress?.Report(new Ps5DebugPackageProgress(readStage, ++processed, entries.Count, entry.Path));
+            if (entry.IsDirectory) { directories.Add(entry.Path); continue; }
+            if (entry.IsSymlink) continue;
             string relative = entry.Path;
-            bool publishing = SourceFolderValidator.IsPublishingArtifact(relative) ||
-                Path.GetExtension(relative).Equals(".gp4", StringComparison.OrdinalIgnoreCase);
-            bool underSceSys = relative.StartsWith("sce_sys/", StringComparison.OrdinalIgnoreCase);
-            string sceRelative = underSceSys ? relative["sce_sys/".Length..] : string.Empty;
-
-            if (underSceSys)
-            {
-                byte[] data = ReadEntry(open, relative, entry.Size);
-                sceSys[sceRelative] = ProsperoUcpArchive.IsRepairableSceSysPath(sceRelative)
-                    ? ProsperoUcpArchive.RepairIfNeeded(data)
-                    : data;
-            }
-
-            if (publishing) continue;
-            if (underSceSys && ProsperoSceSysMedia.IsOuterCntFile(sceRelative)) continue;
-
-            if (underSceSys && ProsperoUcpArchive.IsRepairableSceSysPath(sceRelative))
-            {
-                files.Add(new EngineInnerFile
-                {
-                    Path = "/" + relative,
-                    Data = sceSys[sceRelative],
-                    PlayGoChunkId = 0
-                });
-                continue;
-            }
-
-            files.Add(new EngineInnerFile
-            {
-                Path = "/" + relative,
-                Source = new VolumeFileSource(entry.Size, () => open(relative)),
-                PlayGoChunkId = 0
-            });
+            if (SourceFolderValidator.IsPublishingArtifact(relative)) continue;
+            sourceBytes += entry.Size;
+            files.Add(new PkgSourceFile(relative, entry.Size, () => open(relative)));
         }
 
-        if (!sceSys.TryGetValue("param.json", out byte[]? paramJson) || paramJson.Length == 0)
-            throw new InvalidDataException(
-                "The image does not contain sce_sys/param.json, which is required to build a package.");
-        if (files.Count == 0)
-            throw new InvalidDataException("The image does not contain any package files.");
-
-        var log = new DebugPackageBuildLog
-        {
-            Log = options.Log ?? (_ => { }),
-            Progress = new RelayProgress<ProsperoBuildProgress>(value =>
-                progress?.Report(new SonyDebugPackageProgress(
-                    value.StageId is { } stage ? ProsperoBuildStages.Name(stage) : value.Stage,
-                    value.BytesTotal > 0 ? value.BytesDone : value.Done,
-                    value.BytesTotal > 0 ? value.BytesTotal : value.Total,
-                    value.CurrentPath ?? string.Empty)))
-        };
-
-        EngineBuildResult result = EngineBuilder.Build(files, new DebugPackageBuildOptions
-        {
-            OutputPath = destination,
-            ContentId = credentials.ContentId,
-            Passcode = credentials.Passcode,
-            ParamJson = paramJson,
-            Compression = options.Compression.ToEngine(),
-            KrakenLevel = options.KrakenLevel,
-            KrakenThreads = options.KrakenThreads,
-            PlayGoChunkCount = options.PlayGoChunkCount,
-            DrmTypeOverride = options.DrmTypeOverride,
-            OuterSeed = options.Seed,
-            DeterministicEntryKeys = options.Seed is { Length: 16 },
-            SdkVersionOverride = options.SdkVersionOverride,
-            TempDirectory = options.TempDirectory,
-            SceSysFiles = sceSys,
-            FakeSignModules = options.FakeSignModules,
-            InjectRightSprx = options.InjectRightSprx,
-            Log = log
-        }, cancellationToken);
-
-        return new SonyDebugPackageBuildResult
-        {
-            OutputPath = destination,
-            ContentId = credentials.ContentId,
-            KeyFingerprint = credentials.Fingerprint,
-            PackageSize = new FileInfo(destination).Length,
-            SourceBytes = sourceBytes,
-            SourceFiles = sourceFiles,
-            UsesDefaultPasscode = credentials.UsesDefaultPasscode
-        };
+        if (!files.Any(file => file.Path.Equals("sce_sys/param.json", StringComparison.Ordinal)))
+            throw new InvalidDataException("The image does not contain sce_sys/param.json, which is required to build a package.");
+        if (files.Count == 0) throw new InvalidDataException("The image does not contain any package files.");
+        return PackwrightEngine.Run(files, directories, outputPath, options, progress, sourceBytes, cancellationToken);
     }
-
     /// <summary>
     /// Sums the uncompressed payload bytes of an image (exFAT / UFS2-FFPKG / FFPFSC) without
     /// extracting or building it. Used to preflight the disk space an extract-then-build needs.
@@ -218,6 +124,35 @@ public static class VolumeDebugPackageBuilder
                     open = volume.OpenFile;
                     return volume;
                 }
+                case Ps5ImageFormat.ZArchive:
+                {
+                    formatName = "ZArchive";
+                    stream.Dispose();
+                    var volume = new ZArchiveVolume(imagePath);
+                    try
+                    {
+                        const string paramSuffix = "sce_sys/param.json";
+                        ZArchiveEntry[] roots = volume.Entries
+                            .Where(item => !item.IsDirectory && (item.Path.Equals(paramSuffix, StringComparison.OrdinalIgnoreCase)
+                                || item.Path.EndsWith("/" + paramSuffix, StringComparison.OrdinalIgnoreCase))).ToArray();
+                        if (roots.Length == 0) throw new InvalidDataException("The ZArchive has no sce_sys/param.json.");
+                        if (roots.Length > 1) throw new InvalidDataException("The ZArchive contains multiple PS5 game roots.");
+                        string root = roots[0].Path.Length == paramSuffix.Length ? string.Empty : roots[0].Path[..^(paramSuffix.Length + 1)];
+                        string prefix = root.Length == 0 ? string.Empty : root + "/";
+                        entries = volume.Entries
+                            .Where(item => prefix.Length == 0 || item.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                            .Select(item => new VolumeFile(Normalize(item.Path[prefix.Length..]), item.IsDirectory, false, item.Size))
+                            .Where(item => item.Path.Length > 0)
+                            .ToArray();
+                        open = relative => volume.OpenFile(prefix + relative);
+                        return volume;
+                    }
+                    catch
+                    {
+                        volume.Dispose();
+                        throw;
+                    }
+                }
                 default:
                     throw new InvalidDataException($"Unrecognised PS5 image format: {imagePath}");
             }
@@ -229,28 +164,7 @@ public static class VolumeDebugPackageBuilder
         }
     }
 
-    private static byte[] ReadEntry(Func<string, Stream> open, string path, long size)
-    {
-        if (size < 0 || size > int.MaxValue)
-            throw new IOException($"The image file is too large to load into memory: {path}");
-        using Stream stream = open(path);
-        byte[] data = new byte[checked((int)size)];
-        stream.ReadExactly(data);
-        return data;
-    }
-
     private static string Normalize(string path) => path.Replace('\\', '/').TrimStart('/');
 
     private sealed record VolumeFile(string Path, bool IsDirectory, bool IsSymlink, long Size);
-
-    private sealed class VolumeFileSource(long length, Func<Stream> open) : IProsperoFileSource
-    {
-        public long Length => length;
-        public Stream Open() => open();
-    }
-
-    private sealed class RelayProgress<T>(Action<T> report) : IProgress<T>
-    {
-        public void Report(T value) => report(value);
-    }
 }

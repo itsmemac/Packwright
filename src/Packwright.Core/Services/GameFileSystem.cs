@@ -1,7 +1,7 @@
 using Packwright.Core.Models;
 using Packwright.Core.Parsers;
 using Packwright.Containers;
-using ProsperoPkgTool.Containers;
+using Packwright.Pkg.Reader;
 using UFS2Tool;
 
 namespace Packwright.Core.Services;
@@ -29,7 +29,7 @@ public static class GameFileSystem
             Ps5SourceKind.FilesystemImage => new FilesystemImageGameFileSystem(game.RootPath, game.VirtualRoot),
             Ps5SourceKind.Ffpkg => new FfpkgGameFileSystem(game.RootPath, game.VirtualRoot),
             Ps5SourceKind.ZArchive => new ZArchiveGameFileSystem(game.RootPath, game.VirtualRoot),
-            Ps5SourceKind.SonyPackage => new SonyPackageGameFileSystem(game),
+            Ps5SourceKind.Ps5Package => new Ps5PackageGameFileSystem(game),
             _ => new LocalGameFileSystem(game.RootPath, cancellationToken)
         };
 
@@ -108,18 +108,18 @@ public static class GameFileSystem
         return new GameFileChunk(data, offset, input.Length);
     }
 
-    private sealed class SonyPackageGameFileSystem : IReadOnlyGameFileSystem
+    private sealed class Ps5PackageGameFileSystem : IReadOnlyGameFileSystem
     {
         private readonly string _path;
         private readonly Dictionary<string, Segment[]> _segments;
-        private readonly SonyPfsCryptoContext? _cryptoContext;
-        private readonly SonyEnginePackageAccess? _engine;
+        private readonly Ps5PfsCryptoContext? _cryptoContext;
+        private readonly Ps5EnginePackageAccess? _engine;
         private readonly Dictionary<string, (uint Id, long Size)>? _cntEntries;
 
-        public SonyPackageGameFileSystem(Ps5GameInfo game)
+        public Ps5PackageGameFileSystem(Ps5GameInfo game)
         {
             _path = Path.GetFullPath(game.RootPath);
-            SonyPkgSummary package = ResolveSonyPackage(game, _path);
+            Ps5PkgSummary package = ResolvePs5Package(game, _path);
             _segments = new Dictionary<string, Segment[]>(StringComparer.OrdinalIgnoreCase);
 
             if (package.NestedPfs?.EngineAccess is { } engine)
@@ -130,7 +130,7 @@ public static class GameFileSystem
                 // trophies, activities...). Real packages keep these in the CNT container rather than
                 // the inner PFS, so hiding them whenever the inner image decodes would drop metadata,
                 // artwork, and trophies. The inner PFS wins for any path present in both.
-                ProsperoInnerPfsReader.Entry[] innerFiles = engine.Files.ToArray();
+                PkgFile[] innerFiles = engine.Files.ToArray();
                 if (engine.DecodeError is { } decodeError)
                     throw new InvalidDataException(engine.DecodeUnsupported
                         ? $"This package uses a format this build does not support yet: {decodeError}"
@@ -151,7 +151,7 @@ public static class GameFileSystem
                 }
 
                 var records = new Dictionary<string, (long Size, string Origin)>(StringComparer.OrdinalIgnoreCase);
-                foreach (ProsperoInnerPfsReader.Entry file in innerFiles)
+                foreach (PkgFile file in innerFiles)
                 {
                     string relative = NormalizePath(engine.ToRelativePath(file));
                     if (relative.Length > 0) records[relative] = (file.Size, "PFS");
@@ -166,10 +166,10 @@ public static class GameFileSystem
                 return;
             }
 
-            if (package.NestedPfs?.AccessState == SonyPfsAccessState.PlaintextIndexed)
+            if (package.NestedPfs?.AccessState == Ps5PfsAccessState.PlaintextIndexed)
             {
                 _cryptoContext = package.NestedPfs.CryptoContext;
-                foreach (SonyPfsEntry file in package.NestedPfs.Files)
+                foreach (Ps5PfsEntry file in package.NestedPfs.Files)
                 {
                     string path = NormalizePath(file.RelativePath);
                     if (path.Length == 0 || file.Extents.Count == 0 || _segments.ContainsKey(path)) continue;
@@ -182,7 +182,7 @@ public static class GameFileSystem
             }
             else
             {
-                foreach (SonyPkgEntry entry in package.Entries.Where(entry => !entry.IsEncrypted))
+                foreach (Ps5PkgEntry entry in package.Entries.Where(entry => !entry.IsEncrypted))
                 {
                     string path = NormalizePath(entry.DisplayName);
                     if (path.Length == 0 || _segments.ContainsKey(path)) continue;
@@ -194,13 +194,13 @@ public static class GameFileSystem
                 .OrderBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
-        private static SonyPkgSummary ResolveSonyPackage(Ps5GameInfo game, string path)
+        private static Ps5PkgSummary ResolvePs5Package(Ps5GameInfo game, string path)
         {
             // A manifest-restored package has no live engine access, so re-open it for inner reads.
-            SonyPkgSummary? cached = game.Package;
+            Ps5PkgSummary? cached = game.Package;
             if (cached is not null && (cached.NestedPfs is null || cached.NestedPfs.EngineAccess is not null))
                 return cached;
-            SonyPkgSummary fresh = new Parsers.SonyPkgReader().Read(path);
+            Ps5PkgSummary fresh = new Parsers.Ps5PkgReader().Read(path);
             game.Package = fresh;
             return fresh;
         }
@@ -219,7 +219,7 @@ public static class GameFileSystem
             string normalized = NormalizePath(relativePath);
             if (_engine is not null)
             {
-                if (_engine.TryFindFile(normalized, out ProsperoInnerPfsReader.Entry entry))
+                if (_engine.TryFindFile(normalized, out PkgFile entry))
                     return _engine.OpenInnerFile(entry);
                 if (_cntEntries is not null && _cntEntries.TryGetValue(normalized, out (uint Id, long Size) info))
                     return new MemoryStream(_engine.ReadCntEntry(info.Id), writable: false);
@@ -245,12 +245,12 @@ public static class GameFileSystem
         private readonly Stream _source;
         private readonly Segment[] _segments;
         private readonly long[] _starts;
-        private readonly SonyPfsCryptoContext? _cryptoContext;
+        private readonly Ps5PfsCryptoContext? _cryptoContext;
         private byte[]? _decryptedBlock;
         private int _cachedSegmentIndex = -1;
         private long _position;
 
-        public SegmentedReadStream(Stream source, Segment[] segments, SonyPfsCryptoContext? cryptoContext = null)
+        public SegmentedReadStream(Stream source, Segment[] segments, Ps5PfsCryptoContext? cryptoContext = null)
         {
             _source = source;
             _segments = segments;
@@ -312,7 +312,7 @@ public static class GameFileSystem
             Segment segment = _segments[segmentIndex];
             _source.Position = checked(segment.Offset - segment.BlockInnerOffset);
             _source.ReadExactly(_decryptedBlock);
-            SonyPfsCrypto.DecryptBlock(_decryptedBlock, _cryptoContext,
+            Ps5PfsCrypto.DecryptBlock(_decryptedBlock, _cryptoContext,
                 checked((ulong)segment.BlockIndex), segment.SignedDomain);
             _cachedSegmentIndex = segmentIndex;
         }

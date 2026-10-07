@@ -3,4 +3,6 @@
   <Project Path="src/Packwright.Core/Packwright.Core.csproj" />
   <Project Path="src/Packwright.Containers/Packwright.Containers.csproj" />
   <Project Path="src/Packwright.Ufs2/Packwright.Ufs2.csproj" />
+  <Project Path="src/Packwright.Pkg/Packwright.Pkg.csproj" />
+  <Project Path="tests/Packwright.SmokeTests/Packwright.SmokeTests.csproj" />
 </Solution>

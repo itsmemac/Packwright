@@ -61,13 +61,10 @@ public sealed class JobSpec
     public string Compression { get; set; } = nameof(Ps5InnerCompression.Auto);
     public int KrakenLevel { get; set; } = 7;
     public int KrakenThreads { get; set; }
-    public int PlayGoChunks { get; set; } = 1;
     public bool Deterministic { get; set; }
-    public bool FakeSign { get; set; } = true;
-    public bool RightSprx { get; set; } = true;
     public string? Drm { get; set; } = "upgradable";
     public ulong? Sdk { get; set; }
-    public string? TempDirectory { get; set; }
+    public int PlayGoChunks { get; set; } = 1;
 
     public string ToJson() => JsonSerializer.Serialize(this);
 
@@ -89,7 +86,7 @@ public sealed class JobSpec
     public PackageTaskStage[] Plan() => Kind switch
     {
         Convert => FromPackage ? PackageTaskPlans.ConvertPackage : PackageTaskPlans.ConvertImage,
-        BuildPackage => PackageTaskPlans.BuildPackageFor(Source, Backend == BackendRegistry.LppId && !Directory.Exists(Source)),
+        BuildPackage => PackageTaskPlans.BuildPackageFor(Source),
         Extract => PackageTaskPlans.Extract,
         Verify => PackageTaskPlans.Verify,
         RefreshAmpr => PackageTaskPlans.Ampr,
@@ -142,16 +139,16 @@ public sealed class JobSpec
                 if (Output.Length == 0 || ContentId.Length == 0) return null;
                 var settings = new PackageBuildSettings(
                     Enum.TryParse(Compression, out Ps5InnerCompression compression) ? compression : Ps5InnerCompression.Auto,
-                    KrakenLevel, KrakenThreads, PlayGoChunks, Deterministic, FakeSign, RightSprx, Drm, Sdk, TempDirectory);
+                    KrakenLevel, KrakenThreads, Deterministic, Drm, Sdk, PlayGoChunks);
                 IPackageBackend backend = Jobs.ResolveBackend(Backend);
-                string passcode = Passcode.Length > 0 ? Passcode : SonyDebugPackageCredentials.DefaultPasscode;
+                string passcode = Passcode.Length > 0 ? Passcode : Ps5DebugPackageCredentials.DefaultPasscode;
                 return (progress, token) => Jobs.BuildPackageAsync(Source, Output, ContentId, passcode, Overwrite, settings,
                     backend, progress, token);
             case Extract:
                 if (Output.Length == 0) return null;
                 if (FromPackage)
                 {
-                    string code = Passcode.Length > 0 ? Passcode : SonyDebugPackageCredentials.DefaultPasscode;
+                    string code = Passcode.Length > 0 ? Passcode : Ps5DebugPackageCredentials.DefaultPasscode;
                     return async (progress, token) =>
                         await Jobs.ExtractPackageAsync(Source, Output, code, progress, token).ConfigureAwait(false);
                 }
@@ -160,17 +157,17 @@ public sealed class JobSpec
             case Verify:
                 if (FromPackage)
                 {
-                    string code = Passcode.Length > 0 ? Passcode : SonyDebugPackageCredentials.DefaultPasscode;
+                    string code = Passcode.Length > 0 ? Passcode : Ps5DebugPackageCredentials.DefaultPasscode;
                     return (progress, token) =>
                     {
                         var watch = System.Diagnostics.Stopwatch.StartNew();
-                        SonyDebugPackageValidationResult result = Jobs.VerifyPackage(Source, code);
+                        Ps5DebugPackageValidationResult result = Jobs.VerifyPackage(Source, code);
                         if (!result.IsValid)
                             throw new InvalidDataException("This package did not pass verification: " + result.Message.Trim().TrimEnd('.') +
                                                            ". The file may be damaged or incomplete (compare its size and checksum with where you got it).");
                         Logger.Info($"Package verified: {result.IndexedFiles:N0} indexed file(s).");
                         progress.Report(new PackageTaskProgress("Verified",
-                            Result: $"Verified: no problems found. {result.IndexedFiles:N0} file(s) checked in {Elapsed(watch)}."));
+                            Result: $"Verified: structure, metadata and file decoding are intact. {result.IndexedFiles:N0} file(s) checked in {Elapsed(watch)}."));
                         return Task.CompletedTask;
                     };
                 }
@@ -211,7 +208,7 @@ public sealed class JobSpec
                         .ConfigureAwait(false);
             case EditDetails:
                 if (Edit is not { IsEmpty: false } edit) return null;
-                string editCode = Passcode.Length > 0 ? Passcode : SonyDebugPackageCredentials.DefaultPasscode;
+                string editCode = Passcode.Length > 0 ? Passcode : Ps5DebugPackageCredentials.DefaultPasscode;
                 return (progress, token) => MetadataEditor.ApplyAsync(Source, Output, FromPackage, edit, editCode,
                     Backend, progress, token);
             case SendFtp:

@@ -11,11 +11,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Packwright.Containers\Packwright.Containers.csproj" />
     <ProjectReference Include="..\Packwright.Ufs2\Packwright.Ufs2.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="ProsperoPkgTool">
-      <HintPath>..\..\third-party\ProsperoPkgTool\ProsperoPkgTool.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
+    <ProjectReference Include="..\Packwright.Pkg\Packwright.Pkg.csproj" />
   </ItemGroup>
 </Project>

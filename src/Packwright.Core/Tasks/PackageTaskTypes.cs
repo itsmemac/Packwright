@@ -3,7 +3,7 @@ namespace Packwright.Core.Tasks;
 /// <summary>Stable task type identifiers used for display and future persistence/restore routing.</summary>
 public static class PackageTaskTypes
 {
-    public const string SonyDebugPkg = "FPKG";
+    public const string Ps5DebugPkg = "FPKG";
     public const string FfpfscFromDump = "FFPFSC (dump)";
     public const string FfpfscFromImage = "FFPFSC (image)";
     public const string ExfatCreate = "exFAT image";

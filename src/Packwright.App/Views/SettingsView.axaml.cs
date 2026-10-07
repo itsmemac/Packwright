@@ -23,14 +23,12 @@ public partial class SettingsView : UserControl
         InitializeComponent();
         FolderList.ItemsSource = _folders;
         ViewBox.ItemsSource = Layouts;
-        BackendBox.ItemsSource = BackendRegistry.All.Select(backend =>
-            backend.Id == BackendRegistry.LppId && !Jobs.PlatformSupportsLpp
-                ? backend.DisplayName + " (Windows only)"
-                : backend.DisplayName).ToList();
         RenameTokens.Text = "Tokens: " + string.Join(" ", Ps5RenameFormatter.TokenNames);
         Load();
         ApplyTheme(_services.Settings.Theme);
         _services.LibraryChanged += () => Avalonia.Threading.Dispatcher.UIThread.Post(Load);
+        ImportKeysButton.Click += async (_, _) => await ImportKeysAsync();
+        RemoveKeysButton.Click += (_, _) => RemoveKeys();
         AddFolderButton.Click += async (_, _) =>
         {
             if (await Dialogs.PickFolderAsync(this, "Add a library folder") is { } folder &&
@@ -115,10 +113,45 @@ public partial class SettingsView : UserControl
         PasscodeBox.Text = settings.DebugPasscode;
         ConfirmDeleteBox.IsChecked = settings.ConfirmDelete;
         ConfirmMoveBox.IsChecked = settings.ConfirmMove;
-        BackendBox.SelectedIndex = Math.Max(0, BackendRegistry.All.ToList()
-            .FindIndex(backend => backend.Id == Jobs.ResolveBackend(settings.BuildBackend).Id));
+        ShowKeysStatus();
     }
 
+    private void ShowKeysStatus()
+    {
+        Jobs.EnsureKeys();
+        var keys = Packwright.Core.Builders.Ps5BuildKeys.Current;
+        KeysStatus.Text = keys.IsEmpty ? "No key file imported. Packages are built without those fields filled in." : "Imported: " + keys.Describe() + ".";
+        RemoveKeysButton.IsEnabled = !keys.IsEmpty;
+    }
+
+    private async Task ImportKeysAsync()
+    {
+        string? file = await Dialogs.PickFileAsync(this, "Choose a key file", ["*.txt", "*.keys", "*"]);
+        if (file is null) return;
+        string? problem = Packwright.Core.Builders.Ps5BuildKeys.TryConfigure(file);
+        if (problem is not null)
+        {
+            KeysStatus.Text = "Not imported: " + problem;
+            return;
+        }
+        string target = System.IO.Path.Combine(_services.Store.AppDataDirectory, "keys.txt");
+        File.Copy(file, target, overwrite: true);
+        Packwright.Core.Builders.Ps5BuildKeys.TryConfigure(target);
+        var settings = _services.Settings;
+        settings.KeyFile = target;
+        _services.ReplaceSettings(settings);
+        ShowKeysStatus();
+    }
+
+    private void RemoveKeys()
+    {
+        Packwright.Core.Builders.Ps5BuildKeys.TryConfigure(null);
+        var settings = _services.Settings;
+        settings.KeyFile = string.Empty;
+        _services.ReplaceSettings(settings);
+        try { File.Delete(System.IO.Path.Combine(_services.Store.AppDataDirectory, "keys.txt")); } catch (IOException) { }
+        ShowKeysStatus();
+    }
     private async Task SaveAsync()
     {
         string passcode = PasscodeBox.Text ?? string.Empty;
@@ -147,7 +180,6 @@ public partial class SettingsView : UserControl
         settings.DebugPasscode = passcode;
         settings.ConfirmDelete = ConfirmDeleteBox.IsChecked == true;
         settings.ConfirmMove = ConfirmMoveBox.IsChecked == true;
-        settings.BuildBackend = BackendRegistry.All[Math.Max(0, BackendBox.SelectedIndex)].Id;
         _services.ReplaceSettings(settings);
         ApplyTheme(_services.Settings.Theme);
         _services.NotifySettingsChanged();

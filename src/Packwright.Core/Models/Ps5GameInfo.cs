@@ -5,7 +5,7 @@ namespace Packwright.Core.Models;
 public enum Ps5SourceKind
 {
     LooseDump,
-    SonyPackage,
+    Ps5Package,
     Ffpfsc,
     FilesystemImage,
     Ffpkg,
@@ -60,7 +60,7 @@ public sealed class Ps5GameInfo
     public string RawParamJson { get; set; } = string.Empty;
     public List<string> DataWarnings { get; set; } = [];
     public DateTime LastWriteTimeUtc { get; set; }
-    public SonyPkgSummary? Package { get; set; }
+    public Ps5PkgSummary? Package { get; set; }
 
     public string DisplayVersion => string.IsNullOrWhiteSpace(ContentVersion) ? MasterVersion : ContentVersion;
 
@@ -87,7 +87,7 @@ public sealed class Ps5GameInfo
 
     public string SourceDescription => SourceKind switch
     {
-        Ps5SourceKind.SonyPackage => Package is { Kind: SonyPkgKind.FinalizedDebug }
+        Ps5SourceKind.Ps5Package => Package is { Kind: Ps5PkgKind.FinalizedDebug }
             ? "Debug PKG"
             : Package?.KindDisplayName ?? "PKG",
         Ps5SourceKind.Ffpfsc => "FFPFSC",

@@ -49,9 +49,6 @@ jobs:
         run: |
           cp LICENSE THIRD_PARTY_NOTICES.md publish/
           mkdir -p publish/licenses
-          cp third-party/ProsperoPkgTool/LICENSE publish/licenses/ProsperoPkgTool-LICENSE
-          cp third-party/LibProsperoPkg12/LICENSE publish/licenses/LibProsperoPkg-LICENSE
-          cp third-party/LibProsperoPkg12/NOTICE publish/licenses/LibProsperoPkg-NOTICE
           cp src/Packwright.Ufs2/LICENSE publish/licenses/UFS2Tool-LICENSE
           cp third-party/licenses/* publish/licenses/
       - name: Build the .deb and .rpm
@@ -80,9 +77,6 @@ jobs:
         run: |
           cp LICENSE THIRD_PARTY_NOTICES.md publish/
           mkdir -p publish/licenses
-          cp third-party/ProsperoPkgTool/LICENSE publish/licenses/ProsperoPkgTool-LICENSE
-          cp third-party/LibProsperoPkg12/LICENSE publish/licenses/LibProsperoPkg-LICENSE
-          cp third-party/LibProsperoPkg12/NOTICE publish/licenses/LibProsperoPkg-NOTICE
           cp src/Packwright.Ufs2/LICENSE publish/licenses/UFS2Tool-LICENSE
           cp third-party/licenses/* publish/licenses/
       - name: Install Inno Setup
@@ -124,7 +118,6 @@ jobs:
           chmod +x "$bundle/Contents/MacOS/$APP"
           cp LICENSE THIRD_PARTY_NOTICES.md "$bundle/Contents/Resources/"
           mkdir -p "$bundle/Contents/Resources/licenses"
-          cp third-party/ProsperoPkgTool/LICENSE "$bundle/Contents/Resources/licenses/ProsperoPkgTool-LICENSE"
           cp src/Packwright.Ufs2/LICENSE "$bundle/Contents/Resources/licenses/UFS2Tool-LICENSE"
           cp third-party/licenses/* "$bundle/Contents/Resources/licenses/"
 

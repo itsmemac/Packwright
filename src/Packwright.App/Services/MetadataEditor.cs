@@ -4,6 +4,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Packwright.Core.Backends;
+using Packwright.Core.Builders;
+using Packwright.Core.Services;
 using Packwright.Core.Tasks;
 using Packwright.Containers;
 using Packwright.Infrastructure;
@@ -61,6 +63,7 @@ public static class MetadataEditor
 {
     private const string ParamPath = "sce_sys/param.json";
     private const string IconPath = "sce_sys/icon0.png";
+    private const string IconTexturePath = "sce_sys/icon0.dds";
     private const int MaximumParamBytes = 4 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions WriteOptions = new()
@@ -206,6 +209,17 @@ public static class MetadataEditor
         return "0x" + head.PadRight(Math.Max(total, 4), '0');
     }
 
+
+    // The texture (icon0.dds) a title carries next to its icon, made from the new picture.
+    private static byte[] IconTextureFor(byte[] png)
+    {
+        try { return Ps5DdsEncoder.EncodePng(png); }
+        catch (Exception ex) when (ex is SixLabors.ImageSharp.ImageFormatException or NotSupportedException or ArgumentException)
+        {
+            throw new InvalidDataException("The icon is not a picture Packwright can read.", ex);
+        }
+    }
+
     // ---------------------------------------------------------------- entry point
 
     /// <summary>
@@ -290,7 +304,11 @@ public static class MetadataEditor
             byte[] patched = PatchParam(existing, edit);
             await WriteFileAsync(param, patched, token).ConfigureAwait(false);
             if (icon is not null)
+            {
                 await WriteFileAsync(Path.Combine(root, "sce_sys", "icon0.png"), icon, token).ConfigureAwait(false);
+                string texture = Path.Combine(root, "sce_sys", "icon0.dds");
+                if (File.Exists(texture)) await WriteFileAsync(texture, IconTextureFor(icon), token).ConfigureAwait(false);
+            }
         }
         catch when (!inPlace)
         {
@@ -344,12 +362,13 @@ public static class MetadataEditor
         IProgress<PackageTaskProgress> progress, CancellationToken token)
     {
         byte[]? param;
-        bool hasIcon, hasSys;
+        bool hasIcon, hasSys, hasTexture;
         using (var stream = File.OpenRead(image))
         using (var volume = new ExfatVolume(stream))
         {
             param = volume.Find(ParamPath) is null ? null : volume.ReadAllBytes(ParamPath, MaximumParamBytes);
             hasIcon = volume.Find(IconPath) is not null;
+            hasTexture = volume.Find(IconTexturePath) is not null;
             hasSys = volume.Find("sce_sys") is not null;
         }
         string paramFile = Path.Combine(work, "param.json");
@@ -362,6 +381,12 @@ public static class MetadataEditor
             string iconFile = Path.Combine(work, "icon0.png");
             await File.WriteAllBytesAsync(iconFile, icon, token).ConfigureAwait(false);
             operations.Add(hasIcon ? ExfatEditOperation.Replace(IconPath, iconFile) : ExfatEditOperation.AddFile(IconPath, iconFile));
+            if (hasTexture)
+            {
+                string textureFile = Path.Combine(work, "icon0.dds");
+                await File.WriteAllBytesAsync(textureFile, IconTextureFor(icon), token).ConfigureAwait(false);
+                operations.Add(ExfatEditOperation.Replace(IconTexturePath, textureFile));
+            }
         }
         await ExfatImageMaintenance.ApplyEditsAsync(image, operations, Jobs.Adapt(progress), token).ConfigureAwait(false);
     }
@@ -370,13 +395,14 @@ public static class MetadataEditor
         IProgress<PackageTaskProgress> progress, CancellationToken token)
     {
         byte[]? param;
-        bool hasIcon, hasSys;
+        bool hasIcon, hasSys, hasTexture;
         using (var volume = new Ufs2Volume(image))
         {
             bool Has(string path, bool directory) => volume.Entries.Any(entry => entry.IsDirectory == directory &&
                 entry.Path.Trim('/').Equals(path, StringComparison.OrdinalIgnoreCase));
             param = Has(ParamPath, false) ? volume.ReadAllBytes(ParamPath, MaximumParamBytes) : null;
             hasIcon = Has(IconPath, false);
+            hasTexture = Has(IconTexturePath, false);
             hasSys = Has("sce_sys", true);
         }
         string paramFile = Path.Combine(work, "param.json");
@@ -389,6 +415,12 @@ public static class MetadataEditor
             string iconFile = Path.Combine(work, "icon0.png");
             await File.WriteAllBytesAsync(iconFile, icon, token).ConfigureAwait(false);
             operations.Add(hasIcon ? Ufs2EditOperation.Replace(IconPath, iconFile) : Ufs2EditOperation.AddFile(IconPath, iconFile));
+            if (hasTexture)
+            {
+                string textureFile = Path.Combine(work, "icon0.dds");
+                await File.WriteAllBytesAsync(textureFile, IconTextureFor(icon), token).ConfigureAwait(false);
+                operations.Add(Ufs2EditOperation.Replace(IconTexturePath, textureFile));
+            }
         }
         await Ufs2Operations.ApplyEditsAsync(image, operations, Jobs.AdaptUfs2(progress), token).ConfigureAwait(false);
     }
@@ -453,7 +485,11 @@ public static class MetadataEditor
                 prefix = sys is null ? string.Empty : sys[..^"sce_sys".Length];
             }
             replacements[prefix + ParamPath] = PatchParam(existing, edit);
-            if (icon is not null) replacements[prefix + IconPath] = icon;
+            if (icon is not null)
+            {
+                replacements[prefix + IconPath] = icon;
+                if (volume.FileExists(prefix + IconTexturePath)) replacements[prefix + IconTexturePath] = IconTextureFor(icon);
+            }
         }
 
         string partial = target + ".packwright-tmp";
@@ -477,6 +513,15 @@ public static class MetadataEditor
     private static async Task EditPackageAsync(string source, string target, MetadataEdit edit, byte[]? icon,
         string passcode, string backendId, string work, IProgress<PackageTaskProgress> progress, CancellationToken token)
     {
+        // The quick way: copy the package and rewrite only its metadata. It applies while the content ID is unchanged.
+        string code = passcode.Length > 0 ? passcode : Packwright.Core.Builders.Ps5DebugPackageCredentials.DefaultPasscode;
+        Stage(progress, "Rewriting package metadata");
+        var relay = new Progress<Ps5DebugPackageProgress>(value =>
+            progress.Report(new PackageTaskProgress(value.Stage, 0, 0, value.CompletedBytes, value.TotalBytes, 0, 0, value.CurrentPath)));
+        if (await Ps5PackageMetadataEditor.TryEditAsync(source, target, existing => PatchParam(existing, edit), icon, code, relay, token)
+                .ConfigureAwait(false))
+            return;
+
         string temporary = Path.Combine(work, "package.exfat");
         Stage(progress, "Unpacking package");
         await Jobs.ConvertAsync(source, temporary, Ps5ImageConversionTarget.Exfat, false, true, progress, token,
@@ -486,7 +531,6 @@ public static class MetadataEditor
         string contentId = Jobs.ReadContentId(temporary, Ps5ImageFormat.Exfat);
         if (contentId.Length == 0) throw new InvalidDataException("The package has no content ID, so it cannot be rebuilt.");
         IPackageBackend backend = Jobs.ResolveBackend(backendId);
-        string code = passcode.Length > 0 ? passcode : Packwright.Core.Builders.SonyDebugPackageCredentials.DefaultPasscode;
         Stage(progress, "Rebuilding package");
         await Jobs.BuildPackageAsync(temporary, target, contentId, code, true, new PackageBuildSettings(), backend,
             progress, token).ConfigureAwait(false);

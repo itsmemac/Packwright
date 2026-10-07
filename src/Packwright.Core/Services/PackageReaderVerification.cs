@@ -1,4 +1,4 @@
-using ProsperoPkgTool.Containers;
+using Packwright.Pkg.Reader;
 
 namespace Packwright.Core.Services;
 
@@ -9,7 +9,7 @@ public sealed record PackageReaderVerificationResult(int FileCount, string? Eboo
 }
 
 /// <summary>
-/// Opens a package with the one canonical engine reader (the same reader used to browse and extract
+/// Opens a package with the one canonical reader (the same reader used to browse and extract
 /// packages) so both builders are held to a single acceptance criterion.
 /// </summary>
 public static class PackageReaderVerification
@@ -21,23 +21,23 @@ public static class PackageReaderVerification
     public static PackageReaderVerificationResult Inspect(string packagePath, string? passcode)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packagePath);
-        using ProsperoFileBackedPackage package =
-            ProsperoPackageContent.ReadFileBacked(packagePath, string.IsNullOrEmpty(passcode) ? null : passcode);
+        using PkgPackage package = PkgPackage.Open(packagePath, passcode);
 
-        int fileCount = 0;
+        IReadOnlyList<PkgFile> files;
+        try { files = package.Files; }
+        catch (PkgNotSupportedException ex) { throw new InvalidDataException(ex.Message, ex); }
+
         string? ebootPath = null;
-        foreach (ProsperoInnerPfsReader.Entry entry in package.Entries)
+        foreach (PkgFile file in files)
         {
-            if (entry.IsDirectory)
-                continue;
-            fileCount++;
-            if (ebootPath is not null)
-                continue;
-            string path = entry.Path.Replace('\\', '/').TrimStart('/');
+            string path = file.Path.Replace('\\', '/').TrimStart('/');
             if (path.Equals("eboot.bin", StringComparison.OrdinalIgnoreCase) ||
                 path.EndsWith("/eboot.bin", StringComparison.OrdinalIgnoreCase))
-                ebootPath = entry.Path;
+            {
+                ebootPath = file.Path;
+                break;
+            }
         }
-        return new PackageReaderVerificationResult(fileCount, ebootPath);
+        return new PackageReaderVerificationResult(files.Count, ebootPath);
     }
 }

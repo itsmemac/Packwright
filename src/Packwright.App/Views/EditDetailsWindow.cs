@@ -598,7 +598,7 @@ public sealed class EditDetailsWindow : Window
         };
         _modeNote.Text = _mode.SelectedIndex switch
         {
-            1 => _item.Game.SourceKind == Ps5SourceKind.SonyPackage
+            1 => _item.Game.SourceKind == Ps5SourceKind.Ps5Package
                 ? "The package is unpacked, changed and rebuilt as a debug package (FPKG), as a queued task. This needs free " +
                   "space for a temporary copy and works only for packages Packwright can read (not retail or encrypted ones). " +
                   "The builder sets the required firmware from the game's SDK, so a firmware edit does not stick on packages."

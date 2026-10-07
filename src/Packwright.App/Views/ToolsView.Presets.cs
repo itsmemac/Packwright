@@ -72,17 +72,14 @@ public partial class ToolsView
             FragmentIndex = Math.Max(0, FragmentBox.SelectedIndex),
             DensityIndex = Math.Max(0, DensityBox.SelectedIndex),
             MinFree = (int)(MinFreeBox.Value ?? 0),
-            Backend = BackendRegistry.All.ElementAtOrDefault(Math.Max(0, BackendBox.SelectedIndex))?.Id ?? string.Empty,
+            Backend = BackendRegistry.DefaultId,
             CompressionIndex = Math.Max(0, CompressionBox.SelectedIndex),
             KrakenLevel = KrakenLevels[krakenIndex].Value,
             KrakenThreads = (int)(KrakenThreadsBox.Value ?? 0),
             PlayGoChunks = (int)(PlayGoBox.Value ?? 1),
             Deterministic = DeterministicBox.IsChecked == true,
-            FakeSign = FakeSignBox.IsChecked == true,
-            RightSprx = RightSprxBox.IsChecked == true,
             DrmIndex = Math.Max(0, DrmBox.SelectedIndex),
-            Sdk = SdkBox.SelectedIndex > 0 ? SdkBox.SelectedItem as string ?? string.Empty : string.Empty,
-            TempDirectory = TempBox.Text?.Trim() ?? string.Empty
+            Sdk = SdkBox.SelectedIndex > 0 ? SdkBox.SelectedItem as string ?? string.Empty : string.Empty
         };
     }
 
@@ -101,20 +98,15 @@ public partial class ToolsView
         Select(FragmentBox, preset.FragmentIndex);
         Select(DensityBox, preset.DensityIndex);
         MinFreeBox.Value = Math.Clamp(preset.MinFree, 0, 50);
-        int backend = BackendRegistry.All.ToList().FindIndex(item => item.Id == preset.Backend);
-        if (backend >= 0) BackendBox.SelectedIndex = backend;
         Select(CompressionBox, preset.CompressionIndex);
         int kraken = Array.FindIndex(KrakenLevels, level => level.Value == preset.KrakenLevel);
         KrakenLevelBox.SelectedIndex = kraken >= 0 ? kraken : Array.FindIndex(KrakenLevels, level => level.Value == 7);
         KrakenThreadsBox.Value = Math.Clamp(preset.KrakenThreads, 0, 64);
         PlayGoBox.Value = Math.Clamp(preset.PlayGoChunks, 1, 64);
         DeterministicBox.IsChecked = preset.Deterministic;
-        FakeSignBox.IsChecked = preset.FakeSign;
-        RightSprxBox.IsChecked = preset.RightSprx;
         Select(DrmBox, preset.DrmIndex);
         int sdk = preset.Sdk.Length == 0 ? 0 : SdkBox.Items.OfType<string>().ToList().IndexOf(preset.Sdk);
         SdkBox.SelectedIndex = Math.Max(0, sdk);
-        TempBox.Text = preset.TempDirectory.Length > 0 && Directory.Exists(preset.TempDirectory) ? preset.TempDirectory : string.Empty;
         _suppress = wasSuppressed;
 
         if (Enum.TryParse(preset.Target, out Target target))

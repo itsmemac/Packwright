@@ -32,13 +32,12 @@
       <Border Classes="card">
         <StackPanel Spacing="6">
           <TextBlock Text="BUILT WITH" Classes="section" />
-          <TextBlock TextWrapping="Wrap" Text="Packwright grew out of PS5 PKG Tool by pearlxcore (GPL-3.0). Its image and package engines still power parts of this app. Thank you, pearlxcore." />
-          <TextBlock TextWrapping="Wrap" Text="ProsperoPkgTool by pearlxcore (MIT), the clean room package engine" />
-          <TextBlock TextWrapping="Wrap" Text="LibProsperoPkg and UFS2Tool by SvenGDK (GPL-3.0-or-later / BSD 2-Clause)" />
+          <TextBlock TextWrapping="Wrap" Text="Packwright grew out of PS5 PKG Tool by pearlxcore (GPL-3.0). Its exFAT, FFPKG and FFPFSC image code, library scanner and task queue still come from that project. Thank you, pearlxcore." />
+          <TextBlock TextWrapping="Wrap" Text="LibProsperoPKG and UFS2Tool by SvenGDK (GPL-3.0-or-later / BSD 2-Clause); the package engine builds on LibProsperoPKG" />
           <TextBlock TextWrapping="Wrap" Text="MkPFS by PSBrew / Renan Barreto, ps5-exfat-builder by kerrdec97, PS5-Dump-Image-Converter by strongt1me" />
           <TextBlock TextWrapping="Wrap" Text="ZArchive format by Exzap (MIT), zstd via ZstdSharp (MIT)" />
           <TextBlock TextWrapping="Wrap" Text="PS5 title list by andshrew (MIT), used for Title ID lookups" />
-          <TextBlock TextWrapping="Wrap" Text="Avalonia UI (MIT), ImageSharp, BCnEncoder.Net, Magick.NET" />
+          <TextBlock TextWrapping="Wrap" Text="Avalonia UI (MIT), ImageSharp, BCnEncoder.Net" />
         </StackPanel>
       </Border>
 

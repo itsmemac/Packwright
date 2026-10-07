@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Packwright.Core.Models;
 using Packwright.Core.Parsers;
-using ProsperoPkgTool.Content;
 
 namespace Packwright.Core.Services;
 
@@ -209,8 +208,7 @@ public static partial class Ps5MetadataSuggester
             using Stream stream = files.OpenRead("eboot.bin");
             byte[] head = new byte[(int)Math.Min(stream.Length, 1 << 20)];
             stream.ReadExactly(head);
-            if (!ProsperoSelfReader.TryParse(head, out ProsperoSelfImage? image) || image is null) return false;
-            ulong value = image.ExtInfo.FirmwareVersion;
+            if (!Ps5SelfHeader.TryReadFirmwareVersion(head, out ulong value)) return false;
             if (value == 0) return false;
             string formatted = Ps5ParamReader.FormatSystemVersion("0x" + value.ToString("X16", CultureInfo.InvariantCulture));
             if (formatted.Length == 0 || formatted.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) return false;

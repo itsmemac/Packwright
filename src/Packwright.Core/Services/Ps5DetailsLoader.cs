@@ -12,7 +12,7 @@ public sealed class Ps5DetailsLoader
     private static Ps5GameDetails Load(Ps5GameInfo game, CancellationToken cancellationToken,
         IProgress<Ps5Artwork>? artwork)
     {
-        if (game.SourceKind == Ps5SourceKind.SonyPackage)
+        if (game.SourceKind == Ps5SourceKind.Ps5Package)
             return LoadPackage(game, cancellationToken, artwork);
 
         using IReadOnlyGameFileSystem files = GameFileSystem.Open(game, cancellationToken);
@@ -68,8 +68,8 @@ public sealed class Ps5DetailsLoader
     {
         cancellationToken.ThrowIfCancellationRequested();
         var errors = new List<string>();
-        var reader = new SonyPkgReader();
-        SonyPkgSummary package = ResolvePackage(game, reader);
+        var reader = new Ps5PkgReader();
+        Ps5PkgSummary package = ResolvePackage(game, reader);
         Ps5FileInventory files;
         Ps5ImageData? icon = null;
 
@@ -102,7 +102,7 @@ public sealed class Ps5DetailsLoader
         Ps5ImageData? pic0 = ReadPackageImage(reader, game.RootPath, package, 0x1220, 0x12A0, "PIC0", errors);
         Ps5ImageData? pic1 = ReadPackageImage(reader, game.RootPath, package, null, 0x12C0, "PIC1", errors);
         artwork?.Report(new Ps5Artwork(icon, pic0, pic1, null));
-        if (package.NestedPfs is { } nested && nested.AccessState != SonyPfsAccessState.NotPresent)
+        if (package.NestedPfs is { } nested && nested.AccessState != Ps5PfsAccessState.NotPresent)
             errors.Add(nested.StatusMessage);
 
         return new Ps5GameDetails
@@ -117,8 +117,8 @@ public sealed class Ps5DetailsLoader
         };
     }
 
-    private static Ps5GameDetails LoadReadablePackage(Ps5GameInfo game, SonyPkgSummary package,
-        SonyPkgReader packageReader, IReadOnlyGameFileSystem fileSystem, Ps5FileInventory inventory,
+    private static Ps5GameDetails LoadReadablePackage(Ps5GameInfo game, Ps5PkgSummary package,
+        Ps5PkgReader packageReader, IReadOnlyGameFileSystem fileSystem, Ps5FileInventory inventory,
         Ps5ImageData? icon, CancellationToken cancellationToken, List<string> errors,
         IProgress<Ps5Artwork>? artwork)
     {
@@ -190,19 +190,19 @@ public sealed class Ps5DetailsLoader
         };
     }
 
-    private static SonyPkgSummary ResolvePackage(Ps5GameInfo game, SonyPkgReader reader)
+    private static Ps5PkgSummary ResolvePackage(Ps5GameInfo game, Ps5PkgReader reader)
     {
         // A package restored from the cached manifest has no live engine access (the field is
         // internal and therefore not serialized), so re-open it before reading inner files.
-        SonyPkgSummary? cached = game.Package;
+        Ps5PkgSummary? cached = game.Package;
         if (cached is not null && (cached.NestedPfs is null || cached.NestedPfs.EngineAccess is not null))
             return cached;
-        SonyPkgSummary fresh = reader.Read(game.RootPath);
+        Ps5PkgSummary fresh = reader.Read(game.RootPath);
         game.Package = fresh;
         return fresh;
     }
 
-    private static Ps5FileInventory ReadPackageEntries(SonyPkgSummary package)
+    private static Ps5FileInventory ReadPackageEntries(Ps5PkgSummary package)
     {
         Ps5FileInfo[] entries = package.Entries.Select(entry =>
         {
@@ -231,19 +231,19 @@ public sealed class Ps5DetailsLoader
         };
     }
 
-    private static Ps5ImageData? ReadPackageImage(SonyPkgReader reader, string path, SonyPkgSummary package,
+    private static Ps5ImageData? ReadPackageImage(Ps5PkgReader reader, string path, Ps5PkgSummary package,
         uint? pngId, uint? ddsId, string description, List<string> errors)
     {
         const int maximumImageBytes = 128 * 1024 * 1024;
         try
         {
-            SonyPkgEntry? png = pngId.HasValue
+            Ps5PkgEntry? png = pngId.HasValue
                 ? package.Entries.FirstOrDefault(entry => entry.Id == pngId && !entry.IsEncrypted)
                 : null;
             if (png is not null)
                 return Ps5ImageData.FromPng(reader.ReadEntryBytes(path, package, png, maximumImageBytes));
 
-            SonyPkgEntry? dds = ddsId.HasValue
+            Ps5PkgEntry? dds = ddsId.HasValue
                 ? package.Entries.FirstOrDefault(entry => entry.Id == ddsId && !entry.IsEncrypted)
                 : null;
             if (dds is null) return null;
@@ -294,7 +294,7 @@ public sealed class Ps5DetailsLoader
     /// </summary>
     public static Ps5ImageData? LoadFullBackground(Ps5GameInfo game, int index)
     {
-        if (game.SourceKind == Ps5SourceKind.SonyPackage) return null;
+        if (game.SourceKind == Ps5SourceKind.Ps5Package) return null;
         using IReadOnlyGameFileSystem files = GameFileSystem.Open(game);
         return ReadBackground(files, index, [], full: true);
     }

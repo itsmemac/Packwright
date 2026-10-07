@@ -484,7 +484,7 @@ public partial class LibraryView
             Title = item.Title,
             Source = item.Path,
             Output = outcome.Output,
-            FromPackage = item.Game.SourceKind == Ps5SourceKind.SonyPackage,
+            FromPackage = item.Game.SourceKind == Ps5SourceKind.Ps5Package,
             Passcode = _services.Settings.DebugPasscode,
             Backend = _services.Settings.BuildBackend,
             Edit = outcome.Edit,
@@ -527,7 +527,7 @@ public partial class LibraryView
 
     private async Task RenameByInstallOrderAsync()
     {
-        List<Ps5GameInfo> packages = SelectedGames().Where(game => game.SourceKind == Ps5SourceKind.SonyPackage).ToList();
+        List<Ps5GameInfo> packages = SelectedGames().Where(game => game.SourceKind == Ps5SourceKind.Ps5Package).ToList();
         if (packages.Count == 0)
         {
             await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Rename by install order", "Select one or more package (.pkg) files first.");

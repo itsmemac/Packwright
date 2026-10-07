@@ -107,34 +107,34 @@
         <Border x:Name="BuildOptions" Classes="card" IsVisible="False">
           <StackPanel Spacing="12">
             <TextBlock Text="PACKAGE BUILD OPTIONS" Classes="section" />
-            <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto">
+            <Border Background="#33E0A030" BorderBrush="#E0A030" BorderThickness="1" CornerRadius="6" Padding="10">
+              <TextBlock TextWrapping="Wrap" Text="Experimental: a package built here is a debug package. It is checked and verified on this PC, but it has not been tested on a console, and a successful build does not guarantee a loader will install it. exFAT and FFPKG images are the better-tested route." />
+            </Border>
+            <Grid ColumnDefinitions="*,16,*">
               <StackPanel Spacing="6">
-                <TextBlock Text="Builder" Classes="h" />
-                <ComboBox x:Name="BackendBox" HorizontalAlignment="Stretch" />
-              </StackPanel>
-              <StackPanel Grid.Column="2" Spacing="6">
                 <TextBlock Text="Inner compression" Classes="h" />
                 <ComboBox x:Name="CompressionBox" HorizontalAlignment="Stretch" />
               </StackPanel>
-              <StackPanel Grid.Row="1" Margin="0,12,0,0" Spacing="6">
-                <TextBlock Text="PlayGo chunks" Classes="h" />
-                <NumericUpDown x:Name="PlayGoBox" Minimum="1" Maximum="64" Value="1" FormatString="0" />
-              </StackPanel>
-              <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,12,0,0" Spacing="8" VerticalAlignment="Bottom">
+              <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Bottom">
                 <CheckBox x:Name="DeterministicBox" Content="Reproducible output (fixed seed)" />
-                <CheckBox x:Name="FakeSignBox" Content="Fake-sign modules" IsChecked="True" />
-                <CheckBox x:Name="RightSprxBox" Content="Inject right.sprx" IsChecked="True" />
+              </StackPanel>
+            </Grid>
+            <Grid ColumnDefinitions="*,16,*">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Play-go chunks" Classes="h" />
+                <NumericUpDown x:Name="PlayGoBox" Minimum="1" Maximum="64" Value="1" FormatString="0"
+                               ToolTip.Tip="Used only when the title has no play-go files of its own." />
               </StackPanel>
             </Grid>
             <Expander Header="Advanced" Margin="0,4,0,0">
-              <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto,Auto" Margin="0,10,0,0">
+              <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto" Margin="0,10,0,0">
                 <StackPanel Spacing="6">
                   <TextBlock Text="DRM type" Classes="h" />
                   <ComboBox x:Name="DrmBox" HorizontalAlignment="Stretch" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Spacing="6">
                   <TextBlock Text="SDK version" Classes="h" />
-                  <ComboBox x:Name="SdkBox" HorizontalAlignment="Stretch" />
+                  <ComboBox x:Name="SdkBox" HorizontalAlignment="Stretch" ToolTip.Tip="Written into param.json (SDK and required firmware). The executables are packed as they are." />
                 </StackPanel>
                 <StackPanel Grid.Row="1" Margin="0,12,0,0" Spacing="6">
                   <TextBlock Text="Kraken level" Classes="h" />
@@ -144,13 +144,6 @@
                 <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,12,0,0" Spacing="6">
                   <TextBlock Text="Kraken threads (0 = automatic)" Classes="h" />
                   <NumericUpDown x:Name="KrakenThreadsBox" Minimum="0" Maximum="64" Value="0" FormatString="0" />
-                </StackPanel>
-                <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,12,0,0" Spacing="6">
-                  <TextBlock Text="Workspace folder (temporary files)" Classes="h" />
-                  <DockPanel>
-                    <Button x:Name="BrowseTempButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
-                    <TextBox x:Name="TempBox" Watermark="System temporary folder when empty" />
-                  </DockPanel>
                 </StackPanel>
               </Grid>
             </Expander>

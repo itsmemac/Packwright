@@ -296,7 +296,7 @@ public partial class LibraryView
             Kind = JobSpec.EditDetails,
             Title = item.Title,
             Source = item.Path,
-            FromPackage = item.Game.SourceKind == Ps5SourceKind.SonyPackage,
+            FromPackage = item.Game.SourceKind == Ps5SourceKind.Ps5Package,
             Passcode = _services.Settings.DebugPasscode,
             Backend = _services.Settings.BuildBackend,
             Edit = write,

@@ -76,7 +76,7 @@ public static class LibraryActions
     {
         var plans = new List<RenamePlan>();
         foreach (IGrouping<string, Ps5GameInfo> group in games
-                     .Where(game => game.SourceKind == Ps5SourceKind.SonyPackage && !string.IsNullOrWhiteSpace(game.TitleId))
+                     .Where(game => game.SourceKind == Ps5SourceKind.Ps5Package && !string.IsNullOrWhiteSpace(game.TitleId))
                      .GroupBy(game => game.TitleId, StringComparer.OrdinalIgnoreCase)
                      .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
         {

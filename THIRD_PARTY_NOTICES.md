@@ -20,6 +20,8 @@ itsmemac:
 - the Windows Forms interface was replaced by a cross-platform Avalonia interface (Windows, Linux,
   macOS), with a new design, name and application icon;
 - ZArchive (`.zar`) support was added: writing, reading, library scanning, browsing and conversion;
+- the package engine was replaced by one of its own (`src/Packwright.Pkg`), which reads, verifies, extracts and builds
+  packages, including Kraken compression, with no third-party engine and no keys (see below);
 - the library gained artwork cards, grouping, saved views, a search syntax, a file explorer with
   preview, rename/move/delete tools, task persistence and a task history with game icons;
 - editing of a title's details (name, IDs, region, versions, firmware, SDK, DRM, language, features and icon), in the
@@ -38,42 +40,28 @@ project (Copyright (c) 2026 itsmemac, GPL-3.0).
 ## Source code
 
 The complete corresponding source of each release is the tag with the same version in
-https://github.com/itsmemac/Packwright. The bundled LibProsperoPkg 1.2.0 files are binaries from
-https://github.com/SvenGDK/LibProsperoPkg (GPL-3.0-or-later); their source is available from that
-project.
+https://github.com/itsmemac/Packwright.
 
-## ProsperoPkgTool
+## Packwright.Pkg (the package engine)
 
-The PS5 PKG (FIH/CNT/PFS/NAPS) reading, verification, extraction and debug-package creation
-implementation is provided by the clean-room MIT engine ProsperoPkgTool, consumed as a vendored
-managed library at `third-party/ProsperoPkgTool/ProsperoPkgTool.dll`.
+`src/Packwright.Pkg` is Packwright's own package engine: it reads, validates and extracts PS5 packages and builds
+them (inner image, outer filesystem, metadata container, install metadata, Kraken compression). It contains no
+Sony code, no Sony keys and no third-party binaries.
 
-MIT License. Copyright (c) 2026 pearlxcore. No GPL, SDK, or decompiled code is included; the
-engine is a clean-room reimplementation validated against independent oracles.
+The engine builds on the format work of LibProsperoPKG by SvenGDK (https://github.com/SvenGDK/LibProsperoPKG,
+Copyright (c) 2026 SvenGDK, GPL-3.0-or-later): source files of that project (the PFS and container structures, the
+utility code, the Kraken encoder and decoder) are included in adapted form with their original copyright headers, and
+the layout and digest rules of the writer follow it. LibProsperoPKG in turn contains code derived from LibOrbisPkg by
+maxton (https://github.com/maxton/LibOrbisPkg, GPL-3.0) and an index-based translation of the Kraken decoder "ooz" by
+Powzix (https://github.com/powzix/ooz, GPL-3.0). Their notices are kept in the headers of the files concerned. Every
+part of the engine was checked against real packages on disk: file for file, digest for digest.
 
-## LibProsperoPkg
+The engine ships no key. A few fields of a package are normally sealed with public RSA values; the user may import them
+from a file of their own (see `docs/KEYS.md`). Packwright only checks the file against fingerprints that do not reveal
+the values, and refuses a private key.
 
-The alternative package build/validate/extract backend is provided by LibProsperoPkg, loaded from a
-vendored payload at `third-party/LibProsperoPkg12/` (version **1.2.0** - the version the
-PPR-PKG / fpkg-gui builder ships; the newer 2.6.0 regressed the NAPS layout). It is loaded in an
-isolated assembly-load context together with its bundled dependencies: `BCnEncoder.Net 2.3.0`,
-`CommunityToolkit.HighPerformance 8.4.0` and `Magick.NET 14.15.0` (managed + its
-`runtimes/win-x64/native/Magick.Native-Q8-x64.dll`).
-
-LibProsperoPkg can optionally use Sony's proprietary Publishing Tools library (`libScePubTools.dll`)
-if it finds one from a Sony SDK installation. **That library is Sony's property and is not part of
-this project or of any download.** Everything here works without it.
-
-LibProsperoPkg itself contains code derived from LibOrbisPkg by maxton
-(https://github.com/maxton/LibOrbisPkg, GPL-3.0) and a translation of the "ooz" Kraken decoder by
-Powzix (https://github.com/powzix/ooz, GPL-3.0); see `third-party/LibProsperoPkg12/NOTICE`.
-
-GNU General Public License v3.0 or later (GPL-3.0-or-later).
-Copyright (c) SvenGDK 2026. https://github.com/SvenGDK/LibProsperoPkg
-
-Because LibProsperoPkg is GPL-3.0-or-later and Packwright loads it, the combined work is
-distributed under the GPL-3.0 (see `LICENSE`). The full license text ships at
-`third-party/LibProsperoPkg12/LICENSE` and, in a download, in the `licenses` folder.
+GNU General Public License v3.0 or later. Because these parts are GPL-3.0-or-later, the combined work is distributed
+under the GPL-3.0 (see `LICENSE`).
 
 ## UFS2Tool
 
@@ -88,10 +76,6 @@ The cross-platform interface is built on Avalonia UI (and Avalonia.Controls.Data
 Avalonia.Themes.Fluent, Avalonia.Fonts.Inter), licensed under the MIT License.
 Copyright (c) AvaloniaUI OÜ and contributors. https://github.com/AvaloniaUI/Avalonia
 The Inter font is licensed under the SIL Open Font License 1.1.
-
-## CommunityToolkit.HighPerformance
-
-Bundled with LibProsperoPkg (see above). MIT License. Copyright (c) .NET Foundation and Contributors. https://github.com/CommunityToolkit/dotnet
 
 ## ZstdSharp.Port
 
@@ -123,12 +107,11 @@ format that follow the reference implementation, and were checked against archiv
   Authors, licensed under the SIL Open Font License 1.1 (`third-party/licenses/Inter-OFL-1.1.txt`).
 - The application icon is original to this project.
 
-## SixLabors ImageSharp and Magick.NET
+## SixLabors ImageSharp
 
 ImageSharp (used through BCnEncoder.Net.ImageSharp) is licensed under the Six Labors Split License.
 This project is open source, and ImageSharp is also a transitive dependency here, so ImageSharp is used
-under the Apache License 2.0 (`third-party/licenses/Apache-2.0.txt`). Magick.NET is licensed under the
-Apache License 2.0 and ships with the Windows-only LibProsperoPkg payload.
+under the Apache License 2.0 (`third-party/licenses/Apache-2.0.txt`). 
 
 ## DarkUI
 
@@ -139,7 +122,7 @@ this project.
 ## BCnEncoder.Net
 
 BCnEncoder.Net (and BCnEncoder.Net.ImageSharp) is distributed under the MIT License. It is used to
-encode BC7 textures for PS5 CNT media. https://github.com/Nominom/BCnEncoder.NET
+decode the BC7 textures of PS5 artwork for display. https://github.com/Nominom/BCnEncoder.NET
 
 ## PlayStation-Titles (title list, downloaded on request)
 
@@ -155,14 +138,14 @@ documentation and validated against independent tools. Credit to the authors of 
 document and handle these formats:
 
 - MkPFS, PSBrew / Renan Barreto (https://github.com/PSBrew/MkPFS), PFS and PFSC/FFPFSC format work.
-- UFS2Tool and LibProsperoPkg, SvenGDK (https://github.com/SvenGDK/UFS2Tool), UFS2/FFPKG work. UFS2Tool is used under the BSD 2-Clause License.
+- UFS2Tool and LibProsperoPKG, SvenGDK (https://github.com/SvenGDK/UFS2Tool), UFS2/FFPKG work. UFS2Tool is used under the BSD 2-Clause License.
 - ps5-exfat-builder, kerrdec97 (https://github.com/PSBrew/ps5-exfat-builder), exFAT format work.
 - PS5 Dump and Image Converter, strongt1me (https://github.com/strongt1me/PS5-Dump-Image-Converter).
 
 ## MIT License text
 
-This text applies to every component above that is marked "MIT License" (ProsperoPkgTool, Avalonia
-UI, CommunityToolkit.HighPerformance, ZstdSharp.Port, BCnEncoder.Net, DarkUI and the PlayStation-Titles list), each with the
+This text applies to every component above that is marked "MIT License" (Avalonia
+UI, ZstdSharp.Port, BCnEncoder.Net, DarkUI and the PlayStation-Titles list), each with the
 copyright notice given for it in its own section.
 
 ```

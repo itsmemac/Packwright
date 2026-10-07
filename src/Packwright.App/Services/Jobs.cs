@@ -13,13 +13,10 @@ public sealed record PackageBuildSettings(
     Ps5InnerCompression Compression = Ps5InnerCompression.Auto,
     int KrakenLevel = 7,
     int KrakenThreads = 0,
-    int PlayGoChunks = 1,
     bool Deterministic = false,
-    bool FakeSignModules = true,
-    bool InjectRightSprx = true,
     string? DrmType = "upgradable",
     ulong? SdkVersionOverride = null,
-    string? TempDirectory = null);
+    int PlayGoChunks = 1);
 
 /// <summary>
 /// The long-running operations behind the Tools tab. Each method is UI-free and reports progress
@@ -43,22 +40,25 @@ public static class Jobs
         new Progress<Ps5ImageConversionProgress>(value => target.Report(new PackageTaskProgress(
             value.Stage, 0, 0, value.Completed, value.Total, 0, 0, string.Empty)));
 
-    public static IProgress<SonyPackageExtractProgress> AdaptExtract(IProgress<PackageTaskProgress> target) =>
-        new Progress<SonyPackageExtractProgress>(value => target.Report(new PackageTaskProgress(
+    public static IProgress<Ps5PackageExtractProgress> AdaptExtract(IProgress<PackageTaskProgress> target) =>
+        new Progress<Ps5PackageExtractProgress>(value => target.Report(new PackageTaskProgress(
             "Extracting", 0, 0, value.CompletedBytes, value.TotalBytes, 0, 0, value.CurrentPath)));
 
-    /// <summary>The builder to use: the saved choice, falling back when LibProsperoPkg is not usable on this OS.</summary>
-    public static IPackageBackend ResolveBackend(string? id)
+    private static bool _keysLoaded;
+
+    /// <summary>Loads the imported compatibility key file (once) so package builds use it.</summary>
+    public static void EnsureKeys()
     {
-        IPackageBackend backend = BackendRegistry.Get(id);
-        if (backend.Id == BackendRegistry.LppId && !PlatformSupportsLpp)
-            backend = BackendRegistry.Get(BackendRegistry.PptId);
-        return backend;
+        if (_keysLoaded) return;
+        _keysLoaded = true;
+        string path = new AppStateStore().LoadSettings().KeyFile;
+        if (string.IsNullOrWhiteSpace(path)) return;
+        string? problem = Ps5BuildKeys.TryConfigure(path);
+        if (problem is not null) Logger.Warn("The imported key file was not used: " + problem);
     }
 
-    public static bool PlatformSupportsLpp => OperatingSystem.IsWindows() &&
-        File.Exists(Path.Combine(AppContext.BaseDirectory, "LibProsperoPkg12", "LibProsperoPkg.dll"));
-
+    /// <summary>The package engine. There is one.</summary>
+    public static IPackageBackend ResolveBackend(string? id) => BackendRegistry.Get(id);
     public static Task ConvertAsync(string source, string output, Ps5ImageConversionTarget target, bool overwrite,
         bool fromPackage, IProgress<PackageTaskProgress> progress, CancellationToken token,
         ExfatBuildOptions? exfatOptions = null, FfpfscBuildOptions? ffpfscOptions = null,
@@ -66,7 +66,7 @@ public static class Jobs
     {
         IProgress<Ps5ImageConversionProgress> bridge = AdaptConversion(progress);
         return fromPackage
-            ? SonyPackageImageConversion.ConvertAsync(source, output, target, overwrite, bridge, token,
+            ? Ps5PackageImageConversion.ConvertAsync(source, output, target, overwrite, bridge, token,
                 exfatOptions, ffpfscOptions, ffpkgOptions)
             : Ps5ImageConversionService.ConvertAsync(source, output, target, overwrite, bridge, token,
                 exfatOptions, ffpfscOptions, ffpkgOptions);
@@ -125,13 +125,13 @@ public static class Jobs
         }
     }
 
-    public static async Task<SonyPackageExtractResult> ExtractPackageAsync(string source, string output,
+    public static async Task<Ps5PackageExtractResult> ExtractPackageAsync(string source, string output,
         string passcode, IProgress<PackageTaskProgress> progress, CancellationToken token) =>
-        await SonyPackageExtraction.ExtractAsync(source, output, passcode, AdaptExtract(progress), token)
+        await Ps5PackageExtraction.ExtractAsync(source, output, passcode, AdaptExtract(progress), token)
             .ConfigureAwait(false);
 
-    public static SonyDebugPackageValidationResult VerifyPackage(string source, string passcode) =>
-        SonyDebugPackageBuilder.Validate(source, passcode);
+    public static Ps5DebugPackageValidationResult VerifyPackage(string source, string passcode) =>
+        Ps5DebugPackageBuilder.Validate(source, passcode);
 
     /// <summary>Reads the content ID from a dump folder or image so a package can be built from it.</summary>
     public static string ReadContentId(string source, Ps5ImageFormat format)
@@ -207,72 +207,30 @@ public static class Jobs
         string jobDirectory = Path.Combine(outputDirectory, ".packwright-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(jobDirectory);
         string partial = Path.Combine(jobDirectory, Path.GetFileName(output) + ".partial");
-        var options = new SonyDebugPackageBuildOptions
+        var options = new Ps5DebugPackageBuildOptions
         {
             ContentId = contentId,
             Passcode = passcode,
             SdkVersionOverride = settings.SdkVersionOverride,
-            TempDirectory = settings.TempDirectory,
             DrmTypeOverride = settings.DrmType,
             Log = Logger.Info,
             Compression = settings.Compression,
             KrakenLevel = settings.KrakenLevel,
             KrakenThreads = settings.KrakenThreads,
             PlayGoChunkCount = settings.PlayGoChunks,
-            Seed = settings.Deterministic ? DeterministicSeed(contentId, passcode) : null,
-            FakeSignModules = settings.FakeSignModules,
-            InjectRightSprx = settings.InjectRightSprx
+            Seed = settings.Deterministic ? DeterministicSeed(contentId, passcode) : null
         };
-        var bridge = new Progress<SonyDebugPackageProgress>(value =>
+        var bridge = new Progress<Ps5DebugPackageProgress>(value =>
             progress.Report(new PackageTaskProgress(value.Stage, 0, 0, value.CompletedBytes, value.TotalBytes,
                 0, 0, value.CurrentPath)));
+        EnsureKeys();
         bool isDirectory = Directory.Exists(source);
-        Ps5ImageFormat sourceFormat = isDirectory ? Ps5ImageFormat.Unknown : Ps5ImageFormatProbe.Detect(source);
-        // A ZArchive, and any image built with LibProsperoPkg, is unpacked to a staging folder first.
-        bool stageFromImage = !isDirectory && (backend.Id == BackendRegistry.LppId || sourceFormat == Ps5ImageFormat.ZArchive);
-        IPackageBackend effective = isDirectory || stageFromImage ? backend : BackendRegistry.Get(BackendRegistry.PptId);
-
-        string? staging = null;
         try
         {
-            string buildSource = source;
-            if (stageFromImage)
-            {
-                long rawBytes = sourceFormat == Ps5ImageFormat.ZArchive
-                    ? ZArchiveLogicalBytes(source)
-                    : VolumeDebugPackageBuilder.EstimatePayloadBytes(source);
-                // The extractors create the folder themselves (some refuse one that already exists).
-                staging = Path.Combine(Path.GetTempPath(), "Packwright-image-" + Guid.NewGuid().ToString("N"));
-                progress.Report(new PackageTaskProgress("Extract image", 0, 0, 0, rawBytes, 0, 0,
-                    Path.GetFileName(source)));
-                await ExtractImageAsync(source, Ps5ImageFormatProbe.Detect(source), staging, progress, token)
-                    .ConfigureAwait(false);
-                buildSource = staging;
-            }
-
-            async Task BuildAsync()
-            {
-                if (isDirectory || staging is not null)
-                    await effective.BuildFromDirectoryAsync(buildSource, partial, options, bridge, token)
-                        .ConfigureAwait(false);
-                else
-                    await effective.BuildFromImageAsync(source, partial, options, bridge, token)
-                        .ConfigureAwait(false);
-            }
-
-            try
-            {
-                await BuildAsync().ConfigureAwait(false);
-            }
-            catch (BackendNotSupportedException ex) when (effective.Id == BackendRegistry.LppId)
-            {
-                Logger.Info($"Builder {effective.DisplayName} could not lay out this title ({ex.Message}); " +
-                    "retrying with ProsperoPkgTool.");
-                effective = BackendRegistry.Get(BackendRegistry.PptId);
-                TryDeleteFile(partial);
-                await BuildAsync().ConfigureAwait(false);
-            }
-
+            if (isDirectory)
+                await backend.BuildFromDirectoryAsync(source, partial, options, bridge, token).ConfigureAwait(false);
+            else
+                await backend.BuildFromImageAsync(source, partial, options, bridge, token).ConfigureAwait(false);
             PackageReaderVerificationResult result = PackageReaderVerification.Inspect(partial, passcode);
             Logger.Info($"Verified built package: {result.FileCount:N0} file(s), eboot.bin " +
                 (result.HasEboot ? "present" : "missing") + ".");
@@ -290,7 +248,6 @@ public static class Jobs
         finally
         {
             TryDeleteDirectory(jobDirectory);
-            if (staging is not null) TryDeleteDirectory(staging);
         }
     }
 
