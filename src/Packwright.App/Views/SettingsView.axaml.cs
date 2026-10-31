@@ -43,6 +43,11 @@ public partial class SettingsView : UserControl
         {
             if (await Dialogs.PickFolderAsync(this, "Default output folder") is { } folder) OutputBox.Text = folder;
         };
+        BrowseTempButton.Click += async (_, _) =>
+        {
+            if (await Dialogs.PickFolderAsync(this, "Temporary folder") is { } folder) TempBox.Text = folder;
+        };
+        TempNextToOutputBox.IsCheckedChanged += (_, _) => UpdateTempControls();
         SaveButton.Click += async (_, _) => await SaveAsync();
         ConsolesButton.Click += async (_, _) => await ConsolesWindow.ShowAsync(Dialogs.OwnerOf(this));
         WindowsCard.IsVisible = OperatingSystem.IsWindows();
@@ -105,6 +110,9 @@ public partial class SettingsView : UserControl
         ViewBox.SelectedItem = Layouts.Contains(settings.LibraryLayout) ? settings.LibraryLayout : "Cards";
         ThumbnailsBox.IsChecked = settings.ShowThumbnails;
         OutputBox.Text = settings.OutputDirectory;
+        TempBox.Text = settings.TempDirectory;
+        TempNextToOutputBox.IsChecked = settings.TempNextToOutput;
+        UpdateTempControls();
         RenameFormatBox.Text = settings.RenameFormat;
         OpenOutputBox.IsChecked = settings.OpenOutputAfterTask;
         PreviewMbBox.Value = settings.MaxPreviewMb;
@@ -114,6 +122,14 @@ public partial class SettingsView : UserControl
         ConfirmDeleteBox.IsChecked = settings.ConfirmDelete;
         ConfirmMoveBox.IsChecked = settings.ConfirmMove;
         ShowKeysStatus();
+    }
+
+    /// <summary>The folder box only matters when temporary files are not kept next to the output.</summary>
+    private void UpdateTempControls()
+    {
+        bool beside = TempNextToOutputBox.IsChecked == true;
+        TempBox.IsEnabled = !beside;
+        BrowseTempButton.IsEnabled = !beside;
     }
 
     private void ShowKeysStatus()
@@ -161,6 +177,13 @@ public partial class SettingsView : UserControl
                 "The passcode must be exactly 32 characters, or blank for the default.");
             return;
         }
+        string tempFolder = TempBox.Text?.Trim() ?? string.Empty;
+        if (tempFolder.Length > 0 && !System.IO.Path.IsPathFullyQualified(tempFolder))
+        {
+            await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Settings",
+                "The temporary folder must be a full path, such as D:\\Temp, or blank for the system temporary folder.");
+            return;
+        }
         AppSettings settings = _services.Settings;
         // Files and items that were added individually stay manual sources; the rest are library folders.
         settings.ManualSources = _folders.Where(path => File.Exists(path) || _manual.Contains(path)).ToList();
@@ -172,6 +195,8 @@ public partial class SettingsView : UserControl
         settings.LibraryLayout = ViewBox.SelectedItem as string ?? "Cards";
         settings.ShowThumbnails = ThumbnailsBox.IsChecked == true;
         settings.OutputDirectory = OutputBox.Text?.Trim() ?? string.Empty;
+        settings.TempDirectory = tempFolder;
+        settings.TempNextToOutput = TempNextToOutputBox.IsChecked == true;
         settings.RenameFormat = RenameFormatBox.Text?.Trim() ?? string.Empty;
         settings.OpenOutputAfterTask = OpenOutputBox.IsChecked == true;
         settings.MaxPreviewMb = (int)(PreviewMbBox.Value ?? 16);

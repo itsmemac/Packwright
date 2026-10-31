@@ -64,8 +64,19 @@ public sealed class Ps5DumpLocator
         return found;
     }
 
+    /// <summary>
+    /// True for a file inside a job's work folder (<c>.Packwright-convert-…</c>, <c>.Packwright-exfat-edit-…</c> and
+    /// so on), which can sit next to an output in a library folder while a job runs. Its half-built dump or image copy
+    /// is not a title.
+    /// </summary>
+    public static bool IsInWorkFolder(string fullPath) =>
+        fullPath.Contains(Path.DirectorySeparatorChar + ".Packwright-", StringComparison.OrdinalIgnoreCase) ||
+        (Path.AltDirectorySeparatorChar != Path.DirectorySeparatorChar &&
+         fullPath.Contains(Path.AltDirectorySeparatorChar + ".Packwright-", StringComparison.OrdinalIgnoreCase));
+
     private static void Classify(string fullPath, LocatedSources found)
     {
+        if (IsInWorkFolder(fullPath)) return;
         string name = Path.GetFileName(fullPath);
         if (name.Equals("param.json", StringComparison.OrdinalIgnoreCase))
         {

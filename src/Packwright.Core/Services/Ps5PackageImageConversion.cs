@@ -29,8 +29,7 @@ public static class Ps5PackageImageConversion
         if (string.Equals(packageFull, outputFull, StringComparison.OrdinalIgnoreCase))
             throw new IOException("The output path must be different from the source package.");
 
-        string tempRoot = Path.Combine(Path.GetTempPath(), "Packwright", "pkg-image",
-            Guid.NewGuid().ToString("N"));
+        string tempRoot = TemporaryFolders.Create("pkg-image", outputFull);
         string tree = Path.Combine(tempRoot, "tree");
         try
         {

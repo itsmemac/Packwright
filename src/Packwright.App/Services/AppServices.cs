@@ -1,3 +1,4 @@
+using Packwright.Containers;
 using Packwright.Core.Models;
 using Packwright.Core.Services;
 using Packwright.Core.Tasks;
@@ -19,6 +20,7 @@ public sealed class AppServices
         SettingsLoadResult loaded = Store.LoadSettingsWithDiagnostics();
         Settings = loaded.Settings;
         SettingsWarning = loaded.Warning;
+        TemporaryFolders.Configure(Settings.TempDirectory, Settings.TempNextToOutput);
         Queue = new PackageTaskQueue();
         Queue.TasksChanged += (_, _) => LogTaskChanges();
         string taskFile = Path.Combine(Store.AppDataDirectory, "studio-tasks.json");
@@ -160,6 +162,7 @@ public sealed class AppServices
     public void ReplaceSettings(AppSettings settings)
     {
         Settings = AppSettingsNormalizer.Normalize(settings);
+        TemporaryFolders.Configure(Settings.TempDirectory, Settings.TempNextToOutput);
         SaveSettings();
     }
 

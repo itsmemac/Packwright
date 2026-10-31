@@ -236,8 +236,7 @@ public static class MetadataEditor
         if (!inPlace && (File.Exists(target) || Directory.Exists(target)))
             throw new IOException("The output already exists: " + target);
 
-        string work = Path.Combine(Path.GetTempPath(), "Packwright-edit-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(work);
+        string work = TemporaryFolders.Create("edit", target);
         try
         {
             byte[]? icon = edit.IconPath.Length > 0 ? await File.ReadAllBytesAsync(edit.IconPath, token).ConfigureAwait(false) : null;

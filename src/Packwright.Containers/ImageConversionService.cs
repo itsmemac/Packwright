@@ -122,7 +122,7 @@ public static class Ps5ImageConversionService
             throw new InvalidDataException(
                 $"Converting {sourceFormat} to {target} is not supported.");
 
-        string tempRoot = Path.Combine(Path.GetTempPath(), "Packwright", "convert", Guid.NewGuid().ToString("N"));
+        string? tempRoot = null;
         string? tempOutput = null;
         try
         {
@@ -135,13 +135,14 @@ public static class Ps5ImageConversionService
             }
             else
             {
-                Directory.CreateDirectory(tempRoot);
+                tempRoot = TemporaryFolders.Create("convert", outputFull);
                 tree = Path.Combine(tempRoot, "tree");
                 await ExtractAsync(sourceFull, tree, sourceFormat, progress, cancellationToken).ConfigureAwait(false);
                 fileCount = Directory.EnumerateFiles(tree, "*", SearchOption.AllDirectories).Count();
             }
 
-            string outputDirectory = Path.GetDirectoryName(outputFull) ?? tempRoot;
+            string outputDirectory = Path.GetDirectoryName(outputFull)
+                ?? throw new IOException("The output path has no parent folder: " + outputFull);
             Directory.CreateDirectory(outputDirectory);
             tempOutput = outputFull + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await BuildAsync(tree, tempOutput, target, BuildVolumeName(sourceFull), progress, cancellationToken, exfatOptions, ffpfscOptions, ffpkgOptions)
@@ -164,7 +165,7 @@ public static class Ps5ImageConversionService
         finally
         {
             if (tempOutput is not null) TryDelete(tempOutput);
-            if (Directory.Exists(tempRoot)) TryDeleteDirectory(tempRoot);
+            if (tempRoot is not null && Directory.Exists(tempRoot)) TryDeleteDirectory(tempRoot);
         }
     }
 

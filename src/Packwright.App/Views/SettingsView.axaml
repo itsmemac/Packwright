@@ -45,6 +45,14 @@
               <Button x:Name="BrowseOutputButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
               <TextBox x:Name="OutputBox" Watermark="Next to the source when empty" />
             </DockPanel>
+            <TextBlock Text="Temporary folder" Classes="h" Margin="0,6,0,0" />
+            <DockPanel>
+              <Button x:Name="BrowseTempButton" DockPanel.Dock="Right" Content="Browse..." Margin="8,0,0,0" />
+              <TextBox x:Name="TempBox" Watermark="System temporary folder when empty" />
+            </DockPanel>
+            <CheckBox x:Name="TempNextToOutputBox" Content="Keep temporary files next to the output instead" />
+            <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap"
+                       Text="Converting an image, or editing the details of an FFPFSC image or a package, unpacks the whole game here first, so it needs about as much free space as the game." />
             <TextBlock Text="Custom rename format" Classes="h" Margin="0,6,0,6" />
             <TextBox x:Name="RenameFormatBox" Watermark="{}{TITLE} [{TITLE_ID}]" />
             <TextBlock x:Name="RenameTokens" Classes="muted" FontSize="11" TextWrapping="Wrap" />

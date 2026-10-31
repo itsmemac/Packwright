@@ -52,6 +52,7 @@ public static class AppSettingsNormalizer
         settings.ThumbnailCacheCount = Math.Clamp(settings.ThumbnailCacheCount, MinThumbnailCache, MaxThumbnailCache);
 
         settings.OutputDirectory = (settings.OutputDirectory ?? string.Empty).Trim();
+        settings.TempDirectory = (settings.TempDirectory ?? string.Empty).Trim();
 
         // A passcode is either blank (meaning the built-in all-zero default) or exactly 32 printable
         // ASCII characters. Anything else is discarded rather than carried into a build.

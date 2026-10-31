@@ -118,6 +118,10 @@ public sealed class AppSettings
     // Paths & outputs
     public string OutputDirectory { get; set; } = string.Empty;
     public bool OpenOutputAfterTask { get; set; }
+    /// <summary>Where conversions and edits unpack their work files; empty is the system temporary folder.</summary>
+    public string TempDirectory { get; set; } = string.Empty;
+    /// <summary>Keep work files next to the output instead, on the same drive.</summary>
+    public bool TempNextToOutput { get; set; }
 
     // Tasks workspace
     /// <summary>Remembered vertical split between the task list and the details panel.</summary>

@@ -29,7 +29,8 @@ internal static class Cli
     private static readonly HashSet<string> ValueOptions = new(StringComparer.OrdinalIgnoreCase)
     {
         "to", "o", "output", "preset", "passcode", "level", "gain", "cluster", "block", "fragment", "density", "min-free",
-        "compression", "kraken-level", "threads", "playgo", "drm", "format", "folder", "host", "port", "user", "password"
+        "compression", "kraken-level", "threads", "playgo", "drm", "format", "folder", "host", "port", "user", "password",
+        "temp"
     };
 
     public static bool IsCommand(string[] args) =>
@@ -165,6 +166,7 @@ internal static class Cli
 
             convert options:
               -o, --output <file>   Where to write it (default: next to the source).  --overwrite replaces an existing file.
+              --temp <folder>       Where to unpack work files (default: the folder chosen in Settings, or the system temp).
               --preset <name>       Use a saved or built-in preset from the Tools page (its target and options).
               --level 1-9  --gain 0-100            FFPFSC compression
               --cluster 32|64  --no-ampr           exFAT
@@ -357,6 +359,13 @@ internal static class Cli
 
         Func<IProgress<PackageTaskProgress>, CancellationToken, Task>? run = spec.Executor();
         if (run is null) return Fail("That job cannot run with these arguments.", Usage);
+        // Work files go where Settings says, unless --temp names a folder for this run.
+        if (options.Get("temp") is { } temp) TemporaryFolders.Configure(temp, nextToOutput: false);
+        else
+        {
+            AppSettings saved = new AppStateStore().LoadSettings();
+            TemporaryFolders.Configure(saved.TempDirectory, saved.TempNextToOutput);
+        }
         var printer = new ConsoleProgress();
         Console.Error.WriteLine($"{command}: {source}");
         if (spec.Output.Length > 0) Console.Error.WriteLine("   -> " + spec.Output);

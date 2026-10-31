@@ -240,7 +240,7 @@ Example: `id:PPSA01 size:>20GB -dlc | category:patch`.
 | Settings (including consoles and presets), library cache, task history | Windows `%LOCALAPPDATA%\Packwright`, Linux and macOS `~/.local/share/Packwright` |
 | Library-only edits (`metadata-overrides.json`, `overrides/` for custom icons) | the same folder |
 | Logs | `logs/` inside that folder (also shown on the **Log** page) |
-| Temporary work files | your system temporary folder (only used when an image has to be unpacked first) |
+| Temporary work files | your system temporary folder, or the one chosen under **Settings > Temporary folder** (or next to the output); only used when an image has to be unpacked first. The command line takes `--temp <folder>` too |
 
 Delete the folder to reset the app. Setting the `PACKWRIGHT_DATA` environment variable to a folder makes a separate copy of the app use that folder instead (handy for testing).
 
