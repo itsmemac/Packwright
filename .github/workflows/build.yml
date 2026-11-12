@@ -20,3 +20,29 @@ jobs:
           dotnet-version: 10.0.x
       - name: Publish
         run: dotnet publish src/Packwright.App/Packwright.App.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish
+
+  # The Linux downloads, built and checked the same way as in release.yml but not published. Run it by hand
+  # (Actions > Build > Run workflow) on a branch to try packaging changes before they reach main.
+  linux-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish
+        run: dotnet publish src/Packwright.App/Packwright.App.csproj -c Release -r linux-x64 --self-contained true -o publish
+      - name: Build the packages
+        run: |
+          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Packwright.App/Packwright.App.csproj | head -n1)
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rpm libarchive-tools zstd fakeroot squashfs-tools
+          bash installer/linux/build-packages.sh "$version" publish dist
+      - name: Check the Arch package and the AppImage
+        run: bash installer/linux/check-packages.sh "$VERSION" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/*
+          retention-days: 7

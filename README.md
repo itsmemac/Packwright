@@ -53,11 +53,13 @@ Download the installer for your system from the [latest release](https://github.
 | macOS, Intel | `Packwright-v<version>-macos-x64.dmg` | open it, drag **Packwright** onto **Applications** |
 | Linux (64-bit), Debian, Ubuntu, Mint | `Packwright-v<version>-linux-x64.deb` | your software installer, or `sudo apt install ./<file>.deb` |
 | Linux (64-bit), Fedora, openSUSE, RHEL | `Packwright-v<version>-linux-x64.rpm` | your software installer, or `sudo dnf install ./<file>.rpm` |
+| Linux (64-bit), Arch, Manjaro, EndeavourOS | `Packwright-v<version>-linux-x64.pkg.tar.zst` | `sudo pacman -U ./<file>.pkg.tar.zst` |
+| Linux (64-bit), any distribution | `Packwright-v<version>-linux-x64.AppImage` | nothing to install: `chmod +x <file>.AppImage`, then run it |
 
-- **Uninstall:** Windows, Settings > Apps (or the Start menu entry); macOS, delete Packwright from Applications; Linux, `sudo apt remove packwright` or `sudo dnf remove packwright`.
+- **Uninstall:** Windows, Settings > Apps (or the Start menu entry); macOS, delete Packwright from Applications; Linux, `sudo apt remove packwright`, `sudo dnf remove packwright` or `sudo pacman -R packwright`, or delete the AppImage.
 - **Windows:** the installer is not code-signed, so Windows may say the publisher is unknown.
 - **macOS:** the app is not notarized by Apple, so macOS asks for your approval the first time you open it. See [macOS help](#macos-help) for the steps.
-- **Linux:** the package adds a menu entry and a `packwright` command (see [Command line](#command-line)).
+- **Linux:** the packages add a menu entry and a `packwright` command (see [Command line](#command-line)). The AppImage adds neither: run it directly, and pass commands to it the same way (`./<file>.AppImage help`). If it will not start because FUSE is missing, run it with `--appimage-extract-and-run`.
 - Each release also has `SHA256SUMS.txt` so you can verify a download.
 
 Packwright only writes to your user profile (settings, library cache and thumbnails), never to the install folder.
@@ -198,7 +200,7 @@ Packwright can check GitHub for a newer version. It asks once, **About > Check f
 
 ## Command line
 
-Everything heavy can also run without the window, for scripts and servers. On Windows use `packwright.cmd` (installed beside `Packwright.exe`) so the prompt waits for the result; on Linux the package adds a `packwright` command, and on macOS run `/Applications/Packwright.app/Contents/MacOS/Packwright`.
+Everything heavy can also run without the window, for scripts and servers. On Windows use `packwright.cmd` (installed beside `Packwright.exe`) so the prompt waits for the result; on Linux the packages add a `packwright` command (with the AppImage, run `./<file>.AppImage <command>`), and on macOS run `/Applications/Packwright.app/Contents/MacOS/Packwright`.
 
 ```
 packwright info "D:\Games\PS5\Quake\PPSA01880-app0.zar"
@@ -301,11 +303,11 @@ dotnet publish src/Packwright.App -c Release -r osx-x64   --self-contained true 
 
 Any system can publish for any target.
 
-The installers are built from a publish folder: `installer/Packwright.iss` (Inno Setup 6, Windows), `installer/linux/build-packages.sh` (`.deb` and `.rpm`, needs `dpkg-deb` and `rpmbuild`), and the macOS disk image step in `.github/workflows/release.yml`.
+The installers are built from a publish folder: `installer/Packwright.iss` (Inno Setup 6, Windows), `installer/linux/build-packages.sh` (`.deb`, `.rpm`, Arch `.pkg.tar.zst` and AppImage; the tools it needs are listed at its top, and `installer/linux/check-packages.sh` installs and runs the Arch package and the AppImage before a release), and the macOS disk image step in `.github/workflows/release.yml`.
 
 ## Releases
 
-Releases are automatic. Every push to `main` builds the app for Windows, Linux and macOS and publishes a GitHub release named after the `<Version>` in `src/Packwright.App/Packwright.App.csproj`. Every download is an installer (a Windows setup program, macOS disk images, and Linux `.deb` and `.rpm` packages), attached with `SHA256SUMS.txt`. There are no zip or tar archives.
+Releases are automatic. Every push to `main` builds the app for Windows, Linux and macOS and publishes a GitHub release named after the `<Version>` in `src/Packwright.App/Packwright.App.csproj`. Every download is an installer (a Windows setup program, macOS disk images, and Linux `.deb`, `.rpm` and Arch packages) or, for Linux, a self-contained AppImage, attached with `SHA256SUMS.txt`. There are no zip archives.
 
 - To publish a new version, raise `<Version>` and push to `main`.
 - Pushing again without changing the version refreshes that version's release with the new build.

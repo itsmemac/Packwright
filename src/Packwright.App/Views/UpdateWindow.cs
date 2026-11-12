@@ -132,6 +132,10 @@ public sealed class UpdateWindow : Window
                 return;
             }
             bool isInstaller = UpdateChecker.IsInstaller(_asset);
+            // An AppImage is the program itself: make the checked file executable so it can be started straight away.
+            if (!OperatingSystem.IsWindows() && _asset.Name.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase))
+                File.SetUnixFileMode(result.Path, File.GetUnixFileMode(result.Path) |
+                                                  UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
             _status.Text = $"Saved to {result.Path}\n{result.VerifyMessage}" +
                            (result.Verified == false ? string.Empty
                             : isInstaller ? "\nPress Install now to update."
@@ -194,7 +198,12 @@ public sealed class UpdateWindow : Window
             ? $"when it has downloaded, close Packwright and install it with your software installer, or run: sudo apt install ./{asset.Name}"
             : asset.Name.EndsWith(".rpm", StringComparison.OrdinalIgnoreCase)
                 ? $"when it has downloaded, close Packwright and install it with your software installer, or run: sudo dnf install ./{asset.Name}"
-                : "when it has downloaded, close Packwright and install it.";
+                : asset.Name.EndsWith(".pkg.tar.zst", StringComparison.OrdinalIgnoreCase)
+                    ? $"when it has downloaded, close Packwright and run: sudo pacman -U ./{asset.Name}"
+                    : asset.Name.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
+                        ? "it needs no install: when it has downloaded, close Packwright and start the new AppImage instead " +
+                          "(it is made executable for you). The old AppImage can then be deleted."
+                        : "when it has downloaded, close Packwright and install it.";
 
     private static string DownloadFolder()
     {

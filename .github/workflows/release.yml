@@ -51,11 +51,13 @@ jobs:
           mkdir -p publish/licenses
           cp src/Packwright.Ufs2/LICENSE publish/licenses/UFS2Tool-LICENSE
           cp third-party/licenses/* publish/licenses/
-      - name: Build the .deb and .rpm
+      - name: Build the .deb, .rpm, Arch package and AppImage
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq rpm
+          sudo apt-get install -y -qq rpm libarchive-tools zstd fakeroot squashfs-tools
           bash installer/linux/build-packages.sh "${{ needs.version.outputs.version }}" publish dist
+      - name: Check the Arch package and the AppImage
+        run: bash installer/linux/check-packages.sh "${{ needs.version.outputs.version }}" dist
       - uses: actions/upload-artifact@v4
         with:
           name: release-linux-packages
@@ -197,10 +199,12 @@ jobs:
           | macOS, Intel | \`$APP-v${version}-macos-x64.dmg\` |
           | Linux (64-bit), Debian, Ubuntu, Mint | \`$APP-v${version}-linux-x64.deb\` |
           | Linux (64-bit), Fedora, openSUSE, RHEL | \`$APP-v${version}-linux-x64.rpm\` |
+          | Linux (64-bit), Arch, Manjaro, EndeavourOS | \`$APP-v${version}-linux-x64.pkg.tar.zst\` |
+          | Linux (64-bit), any distribution, no install | \`$APP-v${version}-linux-x64.AppImage\` |
 
           - **Windows:** run the installer. It installs for you without administrator rights, adds an uninstaller (Settings, Apps) and lets Packwright update itself. Windows may warn that the publisher is unknown because it is not code-signed.
           - **macOS:** open the disk image and drag **Packwright** onto **Applications**. The app is not notarized, so the first time you open it go to **System Settings, Privacy & Security** and click **Open Anyway** (step by step in the README under *macOS help*). To uninstall, delete it from Applications.
-          - **Linux:** install with your software installer, or \`sudo apt install ./<file>.deb\` / \`sudo dnf install ./<file>.rpm\`. It adds a menu entry and a \`packwright\` command, and is removed with your package manager.
+          - **Linux:** install with your software installer, or \`sudo apt install ./<file>.deb\` / \`sudo dnf install ./<file>.rpm\` / \`sudo pacman -U ./<file>.pkg.tar.zst\`. It adds a menu entry and a \`packwright\` command, and is removed with your package manager. The AppImage needs no install: make it executable (\`chmod +x <file>.AppImage\`) and run it.
 
           Verify a download with \`SHA256SUMS.txt\`.
 

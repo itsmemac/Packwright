@@ -115,6 +115,7 @@ if (args.Length >= 2 && args[0] == "details")
 }
 if (args.Length == 5 && args[0] == "edit-tests") return await Packwright.SmokeTests.EditTests.Run(args);
 if (args.Length == 2 && args[0] == "temp-folders") return await Packwright.SmokeTests.TempFolderTests.Run(args);
+if (args.Length == 1 && args[0] == "update-pick") return Packwright.SmokeTests.UpdatePickTests.Run();
 if (args.Length == 2 && args[0] == "ampr-refresh")
 {
     var result = await Packwright.Containers.ExfatAmprPatcher.RefreshAsync(args[1]);

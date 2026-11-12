@@ -148,9 +148,15 @@ public static class UpdateChecker
         asset.Name.Contains("Setup", StringComparison.OrdinalIgnoreCase) &&
         asset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The kind of Linux package this distribution installs: ".deb", ".rpm", or empty when it is neither.</summary>
-    public static string LinuxPackageExtension(string? osRelease = null)
+    /// <summary>
+    /// The Linux download for this system: ".AppImage" when Packwright is running from an AppImage (the AppImage runtime
+    /// sets APPIMAGE), otherwise the package this distribution installs (".deb", ".rpm" or ".pkg.tar.zst"), and
+    /// ".AppImage" for any other distribution.
+    /// </summary>
+    public static string LinuxPackageExtension(string? osRelease = null, string? appImage = null)
     {
+        appImage ??= Environment.GetEnvironmentVariable("APPIMAGE");
+        if (!string.IsNullOrEmpty(appImage)) return ".AppImage";
         try
         {
             osRelease ??= File.Exists("/etc/os-release") ? File.ReadAllText("/etc/os-release") : string.Empty;
@@ -166,12 +172,14 @@ public static class UpdateChecker
         }
         if (words.Overlaps(["debian", "ubuntu"])) return ".deb";
         if (words.Overlaps(["fedora", "rhel", "centos", "suse", "opensuse", "opensuse-leap", "opensuse-tumbleweed"])) return ".rpm";
-        return string.Empty;
+        if (words.Overlaps(["arch", "archlinux", "manjaro", "endeavouros", "cachyos"])) return ".pkg.tar.zst";
+        return ".AppImage";
     }
 
     /// <summary>
-    /// The installer for this system: the Windows setup program, the macOS disk image, or the .deb / .rpm that matches the
-    /// Linux distribution. Null when the release has none for this system (the window then points to the release page).
+    /// The installer for this system: the Windows setup program, the macOS disk image, or the Linux download from
+    /// <see cref="LinuxPackageExtension"/>. Null when the release has none for this system (the window then points to the
+    /// release page; releases before 1.2.0 have no Arch package or AppImage).
     /// </summary>
     public static ReleaseAsset? PickAsset(ReleaseInfo release, string? platform = null, string? linuxPackage = null)
     {
