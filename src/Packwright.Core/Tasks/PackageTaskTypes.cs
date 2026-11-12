@@ -19,4 +19,5 @@ public static class PackageTaskTypes
     public const string LibraryMove = "Move";
     public const string EditDetails = "Edit details";
     public const string SendToConsole = "Send to console";
+    public const string MergeParts = "Merge parts";
 }

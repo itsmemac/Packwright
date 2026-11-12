@@ -35,7 +35,7 @@ One app to manage your PS5 dump and image collection, read PS5 packages, fix the
 
 - **Library** of dumps, packages and images as artwork cards or a sortable list, with a search language, grouping, saved views and a details panel.
 - **Fix missing details:** autofill what it can from the files, look titles up by Title ID, and edit names, IDs, firmware and icons, in the library or inside the file.
-- **Image and package tools:** convert between folders, exFAT, FFPKG, FFPFSC, ZArchive and debug packages (FPKG) in every direction, verify, extract, edit and rebuild with new details, repair and edit files inside images, with presets.
+- **Image and package tools:** convert between folders, exFAT, FFPKG, FFPFSC, ZArchive and debug packages (FPKG) in every direction, verify, extract, edit and rebuild with new details, repair and edit files inside images, with presets. Merge packages that were downloaded in parts, checked before and after.
 - **Library health** report: moved or unreadable files, duplicates, superseded updates, wasted space and more.
 - **Send to console** over FTP, or ask a console's installer to download a package from your PC.
 - **Export** the library as CSV, JSON or a web page with artwork.
@@ -176,8 +176,18 @@ Packwright has its own package engine (`src/Packwright.Pkg`). It uses no third-p
 - **Files are taken as they are.** Executables are not re-signed. The title's own `keystone` and `sce_sys/about/right.sprx` are copied when present. When one is missing, Packwright does not make one: it tells you (in the log) that the file is not present and builds the package without it.
 - **Missing icon textures** (`icon0.dds`, `pic*.dds`) are generated from the PNG pictures.
 - **Optional keys:** a few fields of a package are normally sealed with public RSA values. If you have them, import them under Settings > Compatibility keys (see [docs/KEYS.md](docs/KEYS.md)). Packwright ships none; without them a package is complete and readable on a PC.
-- **Retail packages** are recognized but not decoded: their filesystem is encrypted with a key that is not in the file. Retail keys are for you to supply, and entering one is not available yet.
+- **Retail packages** are recognized but not decoded: their filesystem is encrypted with a key that is not in the file. Retail keys are for you to supply, and entering one is not available yet. **Verify** still checks a retail or patch package's structure: the metadata container is where the header says, and its seal, contents, header and image superblock digests match.
 - **Not supported:** the install metadata table `naps_meta_18`, signing of raw ELF modules, and PlayGo files for titles that bring their own (those are copied unchanged).
+
+### Packages downloaded in parts
+
+Large PlayStation downloads come as parts: `<name>_0.pkg`, `<name>_1.pkg`, ... and usually `<name>_sc.pkg`, the package's metadata container. Choose any part (or the folder) on the Tools page and pick **Merge parts**, or run `packwright merge <part or folder>`.
+
+- The parts are joined in number order with the `_sc` part last, which is where the package header says its container starts. Tools that put `_sc` anywhere else make a package that does not install; **Verify** spots one.
+- **Checked before anything is written:** a missing part, a part that did not finish downloading, a part from another download, or a missing `_sc` part is reported with its name. The merged file is checked again afterwards. The checks need no keys; they prove the parts fit together and belong to the same package, but the encrypted data inside each part cannot be checked.
+- **New file** (the default) keeps the parts and needs free space for the whole package. **Merge in place** adds each part onto part 0 and deletes it once it is safely written, so it needs only about one part of free space. If it is interrupted, run it again: it carries on where it stopped and loses nothing.
+- In the library, a package in parts is listed once, as "PKG in N parts", with a reminder to merge it.
+
 ### Send to console
 
 Right-click a game, image or package and choose **Send to console...** to put it on a console on your own network.
@@ -210,6 +220,9 @@ packwright verify game.ffpkg
 packwright extract game.pkg -o out-folder --passcode 00000000000000000000000000000000
 packwright convert dump-folder --to ffpfsc --level 9
 packwright convert game.zar --to exfat --preset "exFAT image with AMPR index"
+packwright merge "D:\Downloads\EP1004-PPSA01547_00-GRANDTHEFTAUTO00_0.pkg"   # join a package downloaded in parts
+packwright merge D:\Downloads\GTA --in-place                                  # add the parts onto part 0, deleting each one
+packwright merge D:\Downloads\GTA --check                                     # only check that the parts are complete
 packwright send big.pkg --to "My PS5" --folder /data/games     # FTP; add --install to let the console download a .pkg
 packwright consoles                                       # the consoles saved in Settings
 packwright help
@@ -253,6 +266,7 @@ Delete the folder to reset the app. Setting the `PACKWRIGHT_DATA` environment va
 | Library, details, file preview | yes | yes | yes |
 | exFAT, FFPKG, FFPFSC, ZArchive convert, extract, verify, edit | yes | yes | yes |
 | FPKG build (built-in engine), with Kraken compression | yes | yes | yes |
+| Merge packages downloaded in parts | yes | yes | yes |
 | Send to console, health report, export, command line | yes | yes | yes |
 | One-button update install | yes | - | - |
 | Explorer context menu | yes | - | - |

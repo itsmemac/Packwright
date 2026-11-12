@@ -62,6 +62,16 @@ public sealed class Ps5LibraryScanner
             }
         }
 
+        // A package downloaded in parts is one title: list it once, from part 0, with the size of all its parts.
+        var partSets = new Dictionary<string, Ps5PackagePartSet>(StringComparer.OrdinalIgnoreCase);
+        foreach (Ps5PackagePartSet set in Ps5PackageParts.FindSets(packagePaths))
+        {
+            foreach (Ps5PackagePart part in set.Parts) packagePaths.Remove(part.Path);
+            string representative = set.Parts.FirstOrDefault(part => part.Number == 0)?.Path ?? set.Parts[0].Path;
+            packagePaths.Add(representative);
+            partSets[representative] = set;
+        }
+
         Dictionary<string, Ps5GameInfo> cachedByRoot = cached is null
             ? new Dictionary<string, Ps5GameInfo>(StringComparer.OrdinalIgnoreCase)
             : cached.Where(game => !string.IsNullOrWhiteSpace(game.RootPath))
@@ -91,7 +101,8 @@ public sealed class Ps5LibraryScanner
                 // length, so compare the size too before reusing cached metadata (loose dumps stamp
                 // param.json, whose length is unrelated to the cached dump size).
                 long length = kind == Ps5SourceKind.LooseDump ? 0 : ReadLength(path);
-                if (cachedByRoot.TryGetValue(rootPath, out Ps5GameInfo? reuse) &&
+                partSets.TryGetValue(path, out Ps5PackagePartSet? parts);
+                if (parts is null && cachedByRoot.TryGetValue(rootPath, out Ps5GameInfo? reuse) &&
                     reuse.SourceKind == kind && reuse.LastWriteTimeUtc == stamp &&
                     (length <= 0 || reuse.SourceSize == length))
                 {
@@ -109,6 +120,7 @@ public sealed class Ps5LibraryScanner
                     Ps5SourceKind.ZArchive => _zarchiveReader.Read(path),
                     _ => _paramReader.Read(path)
                 };
+                if (parts is not null) MarkParts(game, parts);
                 result.Games.Add(game);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
@@ -118,6 +130,7 @@ public sealed class Ps5LibraryScanner
                 Ps5GameInfo? structure = TryReadStructure(kind, path, ex.Message);
                 if (structure is not null)
                 {
+                    if (partSets.TryGetValue(path, out Ps5PackagePartSet? failedParts)) MarkParts(structure, failedParts);
                     structure.DataWarnings.Add("Structure-only view: " + ex.Message);
                     result.Games.Add(structure);
                 }
@@ -132,6 +145,18 @@ public sealed class Ps5LibraryScanner
         progress?.Report(new Ps5ScanProgress { Processed = processed, Total = sources.Length });
         result.Games.Sort((left, right) => StringComparer.CurrentCultureIgnoreCase.Compare(left.Title, right.Title));
         return result;
+    }
+
+    private static void MarkParts(Ps5GameInfo game, Ps5PackagePartSet parts)
+    {
+        game.PackageParts = parts.Count;
+        game.SourceSize = parts.TotalBytes;
+        if (string.IsNullOrWhiteSpace(game.Title) || game.Title.Equals(Path.GetFileNameWithoutExtension(game.RootPath), StringComparison.OrdinalIgnoreCase))
+            game.Title = parts.BaseName;
+        IReadOnlyList<int> missing = parts.MissingNumbers();
+        game.DataWarnings.Add($"Downloaded in {parts.Count} parts and not merged yet" +
+                              (missing.Count > 0 ? $" (part {string.Join(", ", missing.Take(5))}{(missing.Count > 5 ? ", ..." : string.Empty)} missing)" : string.Empty) +
+                              ". Merge them into one package with Tools > Merge parts.");
     }
 
     /// <summary>

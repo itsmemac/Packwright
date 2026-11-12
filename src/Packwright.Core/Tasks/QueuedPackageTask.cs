@@ -77,6 +77,14 @@ public static class PackageTaskPlans
     public static readonly PackageTaskStage[] Verify = [new("Verify")];
     public static readonly PackageTaskStage[] Build = [new("Build")];
 
+    /// <summary>Merge a package that was downloaded in parts.</summary>
+    public static readonly PackageTaskStage[] MergeParts =
+    [
+        new("Check parts", "checking"),
+        new("Merge", "merging"),
+        new("Verify", "verif")
+    ];
+
     public static readonly PackageTaskStage[] ConvertImage =
     [
         new("Extract", "extract", "reading"),

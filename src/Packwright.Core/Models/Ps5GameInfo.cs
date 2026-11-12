@@ -85,8 +85,12 @@ public sealed class Ps5GameInfo
         }
     }
 
+    /// <summary>For a package downloaded in parts and not merged yet: how many part files it has (0 otherwise).</summary>
+    public int PackageParts { get; set; }
+
     public string SourceDescription => SourceKind switch
     {
+        Ps5SourceKind.Ps5Package when PackageParts > 0 => $"PKG in {PackageParts} parts",
         Ps5SourceKind.Ps5Package => Package is { Kind: Ps5PkgKind.FinalizedDebug }
             ? "Debug PKG"
             : Package?.KindDisplayName ?? "PKG",

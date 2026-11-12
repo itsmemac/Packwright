@@ -24,6 +24,7 @@ public sealed class JobSpec
     public const string EditDetails = "editmeta";
     public const string SendFtp = "sendftp";
     public const string SendInstall = "sendurl";
+    public const string MergeParts = "mergeparts";
 
     public string Kind { get; set; } = string.Empty;
 
@@ -37,6 +38,9 @@ public sealed class JobSpec
     public bool Overwrite { get; set; }
     public bool FromPackage { get; set; }
     public string Passcode { get; set; } = string.Empty;
+
+    /// <summary>For <see cref="MergeParts"/>: append the parts onto part 0 and delete each one once it is in.</summary>
+    public bool InPlace { get; set; }
 
     // Image options
     public int ClusterSize { get; set; }
@@ -90,6 +94,7 @@ public sealed class JobSpec
         Extract => PackageTaskPlans.Extract,
         Verify => PackageTaskPlans.Verify,
         RefreshAmpr => PackageTaskPlans.Ampr,
+        MergeParts => PackageTaskPlans.MergeParts,
         _ => PackageTaskPlans.Single
     };
 
@@ -103,6 +108,7 @@ public sealed class JobSpec
         RefreshAmpr => PackageTaskTypes.ExfatAmpr,
         EditDetails => PackageTaskTypes.EditDetails,
         SendFtp or SendInstall => PackageTaskTypes.SendToConsole,
+        MergeParts => PackageTaskTypes.MergeParts,
         _ => PackageTaskTypes.FfpkgRebuild
     };
 
@@ -155,6 +161,19 @@ public sealed class JobSpec
                 Ps5ImageFormat extractFormat = ImageFormat;
                 return (progress, token) => Jobs.ExtractImageAsync(Source, extractFormat, Output, progress, token);
             case Verify:
+                if (FromPackage && Jobs.IsRetailOrPatchPackage(Source))
+                {
+                    // A retail or patch package cannot be decoded, but its layout and keyless digests can be checked.
+                    return (progress, token) =>
+                    {
+                        Packwright.Core.Services.Ps5PackagePartCheck check = Packwright.Core.Services.Ps5PackageParts.CheckMerged(Source);
+                        if (!check.Ok)
+                            throw new InvalidDataException("This package did not pass verification: " + check.Message.Trim());
+                        progress.Report(new PackageTaskProgress("Verified",
+                            Result: $"Verified the structure: {check.Message} The game data inside a retail package is encrypted and is not checked."));
+                        return Task.CompletedTask;
+                    };
+                }
                 if (FromPackage)
                 {
                     string code = Passcode.Length > 0 ? Passcode : Ps5DebugPackageCredentials.DefaultPasscode;
@@ -220,6 +239,10 @@ public sealed class JobSpec
                 if (Console is null) return null;
                 ConsoleProfile installTarget = Console;
                 return (progress, token) => ConsoleSender.InstallByUrlAsync(installTarget, Source, progress, token);
+            case MergeParts:
+                if (Output.Length == 0) return null;
+                bool inPlace = InPlace;
+                return (progress, token) => Jobs.MergePartsAsync(Source, Output, inPlace, Overwrite, progress, token);
             default:
                 return null;
         }

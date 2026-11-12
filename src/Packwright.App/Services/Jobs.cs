@@ -72,6 +72,43 @@ public static class Jobs
                 exfatOptions, ffpfscOptions, ffpkgOptions);
     }
 
+    /// <summary>True for a retail package (FIH header marked retail) or a patch image (LIH header), read from its first bytes.</summary>
+    public static bool IsRetailOrPatchPackage(string path)
+    {
+        try
+        {
+            using FileStream stream = File.OpenRead(path);
+            Span<byte> head = stackalloc byte[6];
+            if (stream.Read(head) != head.Length || head[0] != 0x7F) return false;
+            return (head[1] == (byte)'F' && head[2] == (byte)'I' && head[3] == (byte)'H' && head[5] == 0x80) ||
+                   (head[1] == (byte)'L' && head[2] == (byte)'I' && head[3] == (byte)'H');
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>
+    /// Merges a package downloaded in parts (<paramref name="source"/> is any part, or the folder holding them) into one
+    /// file, after checking that the parts fit together, and checks the result.
+    /// </summary>
+    public static async Task MergePartsAsync(string source, string output, bool inPlace, bool overwrite,
+        IProgress<PackageTaskProgress> progress, CancellationToken token)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Ps5PackagePartSet set = Ps5PackageParts.FindSet(source)
+            ?? throw new InvalidDataException("No package parts (<name>_0.pkg, <name>_1.pkg, ...) were found at " + source);
+        var bridge = new Progress<Ps5PackageMergeProgress>(value => progress.Report(new PackageTaskProgress(
+            value.Stage, CurrentBytes: value.Done, TotalBytes: value.Total, CurrentFile: value.Part)));
+        Ps5PackagePartCheck result = await Ps5PackageParts.MergeAsync(set, output,
+            inPlace ? Ps5PackageMergeMode.InPlace : Ps5PackageMergeMode.NewFile, overwrite, bridge, token).ConfigureAwait(false);
+        TimeSpan time = watch.Elapsed;
+        string elapsed = time.TotalMinutes >= 1 ? $"{(int)time.TotalMinutes} min {time.Seconds} s" : $"{Math.Max(1, (int)Math.Round(time.TotalSeconds))} s";
+        Logger.Info($"Merged {set.Count} parts into {output}: {result.Message}");
+        progress.Report(new PackageTaskProgress("Verified",
+            Result: $"Merged {set.Count} parts into {Path.GetFileName(output)} ({Ps5LibraryHealth.FormatBytes(result.ExpectedSize)}) in {elapsed}. " +
+                    $"The parts fit together and the package's {string.Join(", ", result.Passed)} digests match." +
+                    (inPlace ? " The parts were removed as they were merged." : string.Empty)));
+    }
+
     public static async Task ExtractImageAsync(string source, Ps5ImageFormat format, string output,
         IProgress<PackageTaskProgress> progress, CancellationToken token)
     {

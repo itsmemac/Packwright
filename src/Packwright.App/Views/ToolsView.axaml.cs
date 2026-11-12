@@ -22,6 +22,7 @@ public partial class ToolsView : UserControl
     private const string ActionAmpr = "Refresh AMPR index";
     private const string ActionEdit = "Edit files...";
     private const string ActionRebuild = "Rebuild FFPKG metadata";
+    private const string ActionMerge = "Merge parts";
 
     private static readonly (int Value, string Name)[] KrakenLevels =
     [
@@ -38,6 +39,7 @@ public partial class ToolsView : UserControl
     private bool _isPackage;
     private bool _isDirectory;
     private Ps5PkgKind? _packageKind;
+    private Ps5PackagePartSet? _parts;
 
     public ToolsView()
     {
@@ -72,6 +74,7 @@ public partial class ToolsView : UserControl
         ActionBox.SelectionChanged += (_, _) => { if (!_suppress) UpdateTargets(); };
         TargetBox.SelectionChanged += (_, _) => { if (!_suppress) UpdateOptions(); };
         BrowseOutputButton.Click += async (_, _) => await BrowseOutputAsync();
+        InPlaceBox.IsCheckedChanged += (_, _) => UpdateMergeNote();
         RunButton.Click += async (_, _) => await RunAsync();
         InitializePresets();
         UpdateActions();
@@ -135,6 +138,16 @@ public partial class ToolsView : UserControl
             ? Ps5ImageFormat.Unknown
             : Ps5ImageFormatProbe.Detect(_source);
         _packageKind = null;
+        _parts = null;
+        if (_source is not null && (_isDirectory || Ps5PackageParts.LooksLikePart(_source)))
+        {
+            try { _parts = Ps5PackageParts.FindSet(_source); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                ResultText.Text = ex.Message;
+            }
+            if (_parts is not null) { _isDirectory = false; _isPackage = false; }
+        }
         if (_isPackage)
         {
             try { _packageKind = new Ps5PkgReader().Read(_source!).Kind; }
@@ -151,13 +164,16 @@ public partial class ToolsView : UserControl
         if (_source is not null) _ = LoadSummaryAsync(_source);
         if (_isPackage && _packageKind is not null and not Ps5PkgKind.FinalizedDebug)
             ResultText.Text = _packageKind == Ps5PkgKind.FinalizedPatch
-                ? "Patch package: Convert, Extract and Verify need a finalized debug (FPKG) package."
-                : "Retail package: Convert, Extract and Verify need a debug (FPKG) package.";
+                ? "Patch package: Verify checks its structure; Convert and Extract need a finalized debug (FPKG) package."
+                : "Retail package: Verify checks its structure; Convert and Extract need a debug (FPKG) package.";
         UpdateActions();
     }
 
     private string FormatLabel()
     {
+        if (_parts is { } parts)
+            return $"package in {parts.Count} parts ({Ps5LibraryHealth.FormatBytes(parts.TotalBytes)})" +
+                   (parts.Resume is not null ? ", merge in place was interrupted" : string.Empty);
         if (_isDirectory) return "dump folder";
         if (_isPackage)
             return _packageKind switch
@@ -181,12 +197,14 @@ public partial class ToolsView : UserControl
     private void UpdateActions()
     {
         var actions = new List<string>();
-        if (_source is not null)
+        if (_parts is not null) actions.Add(ActionMerge);
+        else if (_source is not null)
         {
             if (_isDirectory) actions.Add(ActionConvert);
             else if (_isPackage)
             {
                 if (_packageKind == Ps5PkgKind.FinalizedDebug) actions.AddRange([ActionConvert, ActionExtract, ActionVerify]);
+                else if (Jobs.IsRetailOrPatchPackage(_source)) actions.Add(ActionVerify);
             }
             else if (_format is Ps5ImageFormat.Exfat or Ps5ImageFormat.Ufs2 or Ps5ImageFormat.Pfs or Ps5ImageFormat.ZArchive)
             {
@@ -268,11 +286,25 @@ public partial class ToolsView : UserControl
         string? action = CurrentAction;
         bool convert = action == ActionConvert;
         bool extract = action == ActionExtract;
+        bool merge = action == ActionMerge;
         TargetPanel.IsVisible = convert;
         // Presets hold conversion settings, so they only make sense for Convert / Build (or before a source is chosen).
         PresetPanel.IsVisible = convert || action is null;
-        OutputPanel.IsVisible = convert || extract;
-        OutputLabel.Text = extract ? "Output folder" : "Output file";
+        OutputPanel.IsVisible = convert || extract || merge;
+        OutputLabel.Text = extract ? "Output folder" : merge ? "Merged package" : "Output file";
+        MergePanel.IsVisible = merge;
+        if (merge && _parts is { } parts)
+        {
+            InPlaceBox.IsChecked = InPlaceBox.IsChecked == true || parts.Resume is not null;
+            InPlaceBox.IsEnabled = parts.Resume is null;
+            UpdateMergeNote();
+            string current = OutputBox.Text?.Trim() ?? string.Empty;
+            if (current.Length == 0 || current == _lastSuggestion)
+            {
+                _lastSuggestion = parts.SuggestedOutput;
+                OutputBox.Text = _lastSuggestion;
+            }
+        }
         PasscodePanel.IsVisible = _isPackage && (extract || action == ActionVerify);
         BuildOptions.IsVisible = convert && CurrentTarget == Target.Fpkg;
         Target? chosen = convert ? CurrentTarget : null;
@@ -284,6 +316,19 @@ public partial class ToolsView : UserControl
         RunButton.IsEnabled = action is not null;
         if (convert && CurrentTarget is { } target) SuggestOutput(Extension(target), replaceExtension: true);
         else if (extract) SuggestOutput("-files", replaceExtension: false);
+    }
+
+    private void UpdateMergeNote()
+    {
+        if (_parts is not { } parts) return;
+        long largest = parts.Parts.Select(part => part.Length).DefaultIfEmpty(0).Max();
+        MergeNote.Text = parts.Resume is not null
+            ? "A merge in place of this package was interrupted. Run it again to carry on where it stopped."
+            : InPlaceBox.IsChecked == true
+                ? $"Needs only about {Ps5LibraryHealth.FormatBytes(largest)} free, on the parts' drive. The parts are deleted as they are merged, " +
+                  "and if it is interrupted, running it again carries on."
+                : $"Needs {Ps5LibraryHealth.FormatBytes(parts.TotalBytes)} free for the new file. The parts are kept. " +
+                  "Parts are joined in number order with the _sc part last, and checked before and after.";
     }
 
     private string _lastSuggestion = string.Empty;
@@ -321,7 +366,7 @@ public partial class ToolsView : UserControl
             if (await Dialogs.PickFolderAsync(this, "Select the output folder") is { } folder) OutputBox.Text = folder;
             return;
         }
-        Target target = CurrentTarget ?? Target.Ffpfsc;
+        Target target = CurrentAction == ActionMerge ? Target.Fpkg : CurrentTarget ?? Target.Ffpfsc;
         string? file = await Dialogs.SaveFileAsync(this, "Output file",
             Path.GetFileName(OutputBox.Text ?? "output" + Extension(target)), Extension(target));
         if (file is not null) OutputBox.Text = file;
@@ -379,6 +424,9 @@ public partial class ToolsView : UserControl
                     spec.Kind = JobSpec.RebuildFfpkg;
                     Enqueue(spec, $"Rebuild {fileName}", "Rebuild", sourceLabel, "FFPKG");
                     break;
+                case ActionMerge:
+                    await QueueMergeAsync(spec);
+                    break;
                 case ActionRepair:
                     spec.Kind = JobSpec.Repair;
                     Enqueue(spec, $"Repair {fileName}", "Repair", sourceLabel, "");
@@ -402,6 +450,43 @@ public partial class ToolsView : UserControl
         _services.EnqueueJob(spec, name, operation, sourceFormat, targetFormat, qualifier);
         ResultText.Text = "Queued. See the Tasks page.";
         StatusChanged?.Invoke($"Queued: {name}");
+    }
+
+    private async Task QueueMergeAsync(JobSpec spec)
+    {
+        if (_parts is not { } parts) return;
+        string output = OutputBox.Text?.Trim() ?? string.Empty;
+        if (output.Length == 0 || !output.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase))
+        {
+            await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Merge parts", "Choose where to write the merged package (a .pkg file).");
+            return;
+        }
+        if (!spec.Overwrite && (File.Exists(output) || Directory.Exists(output)))
+        {
+            await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Merge parts",
+                "The output already exists:\n" + output + "\n\nTick \"Overwrite the output\" or choose another name.");
+            return;
+        }
+        // Check before queueing (it reads only headers and the _sc part), so a missing part is reported now.
+        ResultText.Text = "Checking the parts...";
+        Ps5PackagePartCheck check = await Task.Run(() => Ps5PackageParts.Check(parts));
+        ResultText.Text = string.Empty;
+        if (!check.Ok)
+        {
+            await Dialogs.ShowMessageAsync(Dialogs.OwnerOf(this), "Merge parts", "These parts cannot be merged yet.\n\n" + check.Message);
+            return;
+        }
+        bool inPlace = InPlaceBox.IsChecked == true || parts.Resume is not null;
+        if (inPlace && parts.Resume is null && !await Dialogs.ConfirmAsync(Dialogs.OwnerOf(this), "Merge in place?",
+                $"Part 0 becomes the merged package and every other part is deleted as soon as it has been added to it " +
+                $"({parts.Count} parts, {Ps5LibraryHealth.FormatBytes(parts.TotalBytes)}). Afterwards only the merged package is left:\n\n{output}",
+                "Merge in place"))
+            return;
+        spec.Kind = JobSpec.MergeParts;
+        spec.Output = output;
+        spec.InPlace = inPlace;
+        spec.FromPackage = false;
+        Enqueue(spec, $"Merge {parts.BaseName}", "Merge parts", $"{parts.Count} parts", "PKG", inPlace ? "in place" : string.Empty);
     }
 
     private async Task QueueConvertAsync(JobSpec spec, string fileName, string sourceLabel)

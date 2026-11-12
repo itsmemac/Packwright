@@ -23,7 +23,7 @@ internal static class Cli
 {
     private const int Ok = 0, Failed = 1, Usage = 2, Cancelled = 130;
 
-    private static readonly string[] Commands = ["info", "scan", "convert", "extract", "verify", "health", "send", "consoles", "version", "help"];
+    private static readonly string[] Commands = ["info", "scan", "convert", "extract", "verify", "merge", "health", "send", "consoles", "version", "help"];
 
     // Options that take a value; everything else starting with '-' is a switch.
     private static readonly HashSet<string> ValueOptions = new(StringComparer.OrdinalIgnoreCase)
@@ -114,6 +114,7 @@ internal static class Cli
                 "send" => SendAsync(options, cancel.Token).GetAwaiter().GetResult(),
                 "consoles" => Consoles(),
                 "convert" or "extract" or "verify" => JobAsync(command, options, cancel.Token).GetAwaiter().GetResult(),
+                "merge" => MergeAsync(options, cancel.Token).GetAwaiter().GetResult(),
                 _ => Fail("Unknown command: " + command, Usage)
             };
         }
@@ -158,6 +159,10 @@ internal static class Cli
               convert <source> --to <t>    Convert or build. <t> is exfat, ffpkg, ffpfsc, zar or pkg.
               extract <source>             Extract an image or package to a folder. -o <folder>
               verify <source>              Check an image or package for damage.
+              merge <part or folder>       Join a package downloaded in parts (<name>_0.pkg, _1.pkg, ... and _sc.pkg)
+                                           into one .pkg. -o <file> | --in-place (append onto part 0 and delete each
+                                           part once it is in; needs little free space, and resumes if interrupted) |
+                                           --check (only check the parts) | --overwrite
               send <source> --to <name>    Send to a console on your network (FTP). --folder <path> | --install (a .pkg: the
                                            console downloads it from this PC) | --host <ip> --port <n> instead of --to
                                            (a console that needs a login: --user <name> --password <text>)
@@ -316,6 +321,43 @@ internal static class Cli
         }
         progress.Finish();
         Console.Error.WriteLine("Done.");
+        return Ok;
+    }
+
+    // ------------------------------------------------------------------ merge
+
+    private static async Task<int> MergeAsync(Options options, CancellationToken token)
+    {
+        if (options.Positional.Count != 1) return Fail("merge needs one part (<name>_0.pkg, ...) or the folder that holds the parts.", Usage);
+        string source = Path.GetFullPath(options.Positional[0]);
+        if (!File.Exists(source) && !Directory.Exists(source)) return Fail("Not found: " + source, Failed);
+        Ps5PackagePartSet? set = Ps5PackageParts.FindSet(source);
+        if (set is null) return Fail("No package parts (<name>_0.pkg, <name>_1.pkg, ... and <name>_sc.pkg) were found at " + source, Failed);
+
+        Console.Error.WriteLine($"merge: {set.BaseName} ({set.Count} parts, {Ps5LibraryHealth.FormatBytes(set.TotalBytes)})");
+        if (set.Resume is not null) Console.Error.WriteLine("   carrying on an interrupted in-place merge (" + Path.GetFileName(set.Resume.Path) + ")");
+        if (options.Has("check"))
+        {
+            Ps5PackagePartCheck check = Ps5PackageParts.Check(set);
+            if (!check.Ok) return Fail(check.Message, Failed);
+            Console.Error.WriteLine("Ready to merge: " + check.Message);
+            return Ok;
+        }
+        bool inPlace = options.Has("in-place") || set.Resume is not null;
+        var spec = new JobSpec
+        {
+            Kind = JobSpec.MergeParts,
+            Source = source,
+            Output = Path.GetFullPath(options.Get("o", "output") ?? set.SuggestedOutput),
+            Overwrite = options.Has("overwrite"),
+            InPlace = inPlace
+        };
+        if (!spec.Output.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase)) return Fail("The output must be a .pkg file.", Usage);
+        Console.Error.WriteLine("   -> " + spec.Output + (inPlace ? "  (in place: each part is deleted once it is merged)" : string.Empty));
+        var printer = new ConsoleProgress();
+        await spec.Executor()!(printer, token);
+        printer.Finish();
+        Console.Error.WriteLine(printer.Result.Length > 0 ? printer.Result : "Done.");
         return Ok;
     }
 
