@@ -201,6 +201,7 @@ jobs:
           | Linux (64-bit), Fedora, openSUSE, RHEL | \`$APP-v${version}-linux-x64.rpm\` |
           | Linux (64-bit), Arch, Manjaro, EndeavourOS | \`$APP-v${version}-linux-x64.pkg.tar.zst\` |
           | Linux (64-bit), any distribution, no install | \`$APP-v${version}-linux-x64.AppImage\` |
+          | Unraid or any Docker host, in a browser | \`ghcr.io/itsmemac/packwright:${version}\` |
 
           - **Windows:** run the installer. It installs for you without administrator rights, adds an uninstaller (Settings, Apps) and lets Packwright update itself. Windows may warn that the publisher is unknown because it is not code-signed.
           - **macOS:** open the disk image and drag **Packwright** onto **Applications**. The app is not notarized, so the first time you open it go to **System Settings, Privacy & Security** and click **Open Anyway** (step by step in the README under *macOS help*). To uninstall, delete it from Applications.
@@ -222,3 +223,32 @@ jobs:
             --title "Packwright $tag" \
             --notes-file notes.md \
             --latest
+
+  # The browser version for Unraid and other Docker hosts: the same Linux app, shown through noVNC.
+  # Published only once the release itself is out, as ghcr.io/<owner>/packwright:<version> and :latest.
+  docker:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/packwright" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: PACKWRIGHT_VERSION=${{ needs.version.outputs.version }}
+          tags: |
+            ${{ steps.name.outputs.image }}:${{ needs.version.outputs.version }}
+            ${{ steps.name.outputs.image }}:latest

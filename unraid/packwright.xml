@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Packwright</Name>
+  <Repository>ghcr.io/itsmemac/packwright:latest</Repository>
+  <Registry>https://github.com/itsmemac/Packwright/pkgs/container/packwright</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Shell>sh</Shell>
+  <Support>https://github.com/itsmemac/Packwright/issues</Support>
+  <Project>https://github.com/itsmemac/Packwright</Project>
+  <Overview>Packwright manages PS5 dump, image and package collections: library, convert between folder, exFAT, FFPKG, FFPFSC, ZArchive and debug packages, verify, extract, merge packages downloaded in parts, and send to a console. This is the desktop app running on the server and shown in your browser, so it works on your games at full disk speed. Sign-in is required; set the username and password below before the first start.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI>https://[IP]:[PORT:5800]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/itsmemac/Packwright/main/unraid/packwright.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/itsmemac/Packwright/main/src/Packwright.App/Assets/icon.png</Icon>
+  <Config Name="Web UI port" Target="5800" Default="5800" Mode="tcp" Description="Open Packwright at https://[server]:[this port]. The certificate is self-signed, so the browser asks once." Type="Port" Display="always" Required="true" Mask="false">5800</Config>
+  <Config Name="Games" Target="/games" Default="/mnt/user/" Mode="rw" Description="The share (or folder) that holds your games. It is the library Packwright scans, and where it writes results." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/</Config>
+  <Config Name="Work files" Target="/temp" Default="/mnt/user/appdata/packwright/temp" Mode="rw" Description="Where conversions unpack a game while they work. Needs as much free space as your largest game; a cache pool is fastest." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/packwright/temp</Config>
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/packwright" Mode="rw" Description="Settings, library cache, logs and the sign-in certificate." Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/packwright</Config>
+  <Config Name="Username" Target="WEB_AUTHENTICATION_USERNAME" Default="" Description="The name you sign in with." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Password" Target="WEB_AUTHENTICATION_PASSWORD" Default="" Description="The password you sign in with." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="User ID" Target="USER_ID" Default="99" Description="Files are written as this user (99 is nobody, Unraid's default)." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="Group ID" Target="GROUP_ID" Default="100" Description="Files are written with this group (100 is users)." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Umask" Target="UMASK" Default="0000" Description="Permissions for new files. 0000 matches Unraid shares." Type="Variable" Display="advanced" Required="false" Mask="false">0000</Config>
+  <Config Name="Screen width" Target="DISPLAY_WIDTH" Default="1920" Description="Width of the screen shown in the browser." Type="Variable" Display="advanced" Required="false" Mask="false">1920</Config>
+  <Config Name="Screen height" Target="DISPLAY_HEIGHT" Default="1080" Description="Height of the screen shown in the browser." Type="Variable" Display="advanced" Required="false" Mask="false">1080</Config>
+  <Config Name="Use HTTPS" Target="SECURE_CONNECTION" Default="1" Description="1 serves the web page over HTTPS (needed for sign-in). Set 0 only behind a reverse proxy that does HTTPS, together with WEB_AUTHENTICATION_ALLOW_INSECURE=1." Type="Variable" Display="advanced" Required="false" Mask="false">1</Config>
+</Container>

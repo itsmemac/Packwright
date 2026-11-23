@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.claude/
+.vs/
+.vscode/
+*.user
+docs/
+release-notes/

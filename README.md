@@ -19,6 +19,7 @@ One app to manage your PS5 dump and image collection, read PS5 packages, fix the
 
 - [Highlights](#highlights)
 - [Download and install](#download-and-install)
+- [Unraid and Docker (in a browser)](#unraid-and-docker-in-a-browser)
 - [macOS help](#macos-help)
 - [Getting started](#getting-started)
 - [Features](#features)
@@ -63,6 +64,35 @@ Download the installer for your system from the [latest release](https://github.
 - Each release also has `SHA256SUMS.txt` so you can verify a download.
 
 Packwright only writes to your user profile (settings, library cache and thumbnails), never to the install folder.
+
+## Unraid and Docker (in a browser)
+
+If your games are on a NAS, run Packwright on the NAS itself and use it from a browser. Work then happens at the server's own disk speed instead of over a network share or a VM's shared folder. The image is `ghcr.io/itsmemac/packwright`, built with every release. It is the same Linux app, shown in the browser with noVNC, on the [jlesage/baseimage-gui](https://github.com/jlesage/docker-baseimage-gui) base image.
+
+**Unraid:** under **Docker**, choose **Add Container** and paste `https://raw.githubusercontent.com/itsmemac/Packwright/main/unraid/packwright.xml` as the **Template**, or fill in the same settings by hand. Pick your games share, set a username and password, and apply. Then open `https://<server>:5800`.
+
+**Docker:**
+
+```bash
+docker run -d --name packwright -p 5800:5800 \
+  -v /path/to/appdata:/config -v /path/to/games:/games -v /path/to/scratch:/temp \
+  -e USER_ID=99 -e GROUP_ID=100 \
+  -e WEB_AUTHENTICATION_USERNAME=you -e WEB_AUTHENTICATION_PASSWORD='choose one' \
+  ghcr.io/itsmemac/packwright:latest
+```
+
+| Folder | What it is |
+| --- | --- |
+| `/games` | Your games. On first start it is the library, and the file pickers open here. |
+| `/temp` | Work files for conversions. It needs as much free space as your largest game; a fast disk such as a cache pool is best. |
+| `/config` | Settings, library cache, logs, the HTTPS certificate and the sign-in file. |
+
+- **Sign-in** is always on. The page is served over HTTPS with a self-signed certificate, so the browser asks you to accept it once. To add more accounts or change a password without the environment variables, run `docker exec -it packwright webauth-user add <name>` (or `update`, `del`, `list`). Behind your own HTTPS reverse proxy, set `SECURE_CONNECTION=0` and `WEB_AUTHENTICATION_ALLOW_INSECURE=1`.
+- Files are written as `USER_ID`:`GROUP_ID` (Unraid's default is 99:100) with `UMASK` (default `0022`, `0000` on the Unraid template).
+- **Screen size:** `DISPLAY_WIDTH` and `DISPLAY_HEIGHT` (default 1920×1080).
+- **Updating:** pull the new image (on Unraid, **Check for Updates** on the Docker page). The in-app update check is off in the container.
+- Other options of the base image (`TZ`, `DARK_MODE`, VNC on port 5900 with `VNC_PASSWORD`, and more) are described in [its documentation](https://github.com/jlesage/docker-baseimage-gui#environment-variables).
+- **Build it yourself** from the repository root: `docker build -f docker/Dockerfile -t packwright .`
 
 ## macOS help
 
