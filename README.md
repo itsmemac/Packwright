@@ -69,7 +69,7 @@ Packwright only writes to your user profile (settings, library cache and thumbna
 
 If your games are on a NAS, run Packwright on the NAS itself and use it from a browser. Work then happens at the server's own disk speed instead of over a network share or a VM's shared folder. The image is `ghcr.io/itsmemac/packwright`, built with every release. It is the same Linux app, shown in the browser with noVNC, on the [jlesage/baseimage-gui](https://github.com/jlesage/docker-baseimage-gui) base image.
 
-**Unraid:** under **Docker**, choose **Add Container** and paste `https://raw.githubusercontent.com/itsmemac/Packwright/main/unraid/packwright.xml` as the **Template**, or fill in the same settings by hand. Pick your games share, set a username and password, and apply. Then open `https://<server>:5800`.
+**Unraid:** the template is in [itsmemac/unraid-template](https://github.com/itsmemac/unraid-template). Under **Settings → Docker** (Advanced View), add `https://github.com/itsmemac/unraid-template` to **Template repositories** and save. Then under **Docker**, choose **Add Container** and pick **packwright**. Pick your games share, set a username and password, and apply. Then open `https://<server>:5800`.
 
 **Docker:**
 

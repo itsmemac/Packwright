@@ -15,7 +15,11 @@ RUN dotnet publish src/Packwright.App/Packwright.App.csproj -c Release -r linux-
 FROM jlesage/baseimage-gui:debian-12-v4
 
 # Libraries the Linux build needs (the same ones the .deb package depends on), plus fonts.
-RUN add-pkg libx11-6 libice6 libsm6 libfontconfig1 libicu72 libssl3 ca-certificates fonts-dejavu-core wmctrl
+# libxi6 (XInput2) is on every desktop but not in the base image: without it Avalonia falls back to core X events,
+# loses the right-button release and never opens context menus. libxrandr2 and libxcursor1 are the other X
+# libraries Avalonia loads when they are present (screen layout, cursor theme).
+RUN add-pkg libx11-6 libice6 libsm6 libfontconfig1 libicu72 libssl3 ca-certificates fonts-dejavu-core wmctrl \
+            libxi6 libxrandr2 libxcursor1
 
 COPY --from=build /out /opt/packwright
 COPY src/Packwright.App/Assets/icon.png /tmp/packwright-icon.png
