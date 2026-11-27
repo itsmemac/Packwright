@@ -9,6 +9,8 @@ namespace Packwright.Containers;
 /// Managed writer for the ZArchive (.zar) container (https://github.com/Exzap/ZArchive). Data is only
 /// ever appended: file payloads are cut into 64 KiB blocks that are zstd compressed, followed by the
 /// offset records, name table, file tree and a footer carrying the SHA-256 of the whole archive.
+/// Blocks are collected in batches; a batch is compressed on several threads (one compressor per thread) while
+/// the next one is filled, and is written in order, so the output is the same whatever the thread count.
 /// </summary>
 public sealed class ZArchiveWriter : IDisposable
 {
@@ -18,6 +20,7 @@ public sealed class ZArchiveWriter : IDisposable
     public const uint FooterVersion1 = 0x61bf3a01;
     public const int FooterLength = 16 * 6 + 32 + 8 + 4 + 4;
     private const int CompressionLevel = 6;
+    private const int BlocksPerThread = 8;
 
     private sealed class Node(bool isFile, uint nameIndex)
     {
@@ -33,12 +36,19 @@ public sealed class ZArchiveWriter : IDisposable
     private readonly Stream _output;
     private readonly bool _leaveOpen;
     private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-    private readonly Compressor _compressor = new(CompressionLevel);
+    private readonly int _threads;
+    private readonly Compressor?[] _compressors;
     private readonly Node _root = new(false, uint.MaxValue);
     private readonly List<byte[]> _names = [];
     private readonly Dictionary<string, uint> _nameLookup = new(StringComparer.Ordinal);
-    private readonly byte[] _block = new byte[BlockSize];
+    // Two sets of blocks: one is filled by Append while the other is compressed and written in the background.
+    private byte[][] _filling;
+    private byte[][] _queued;
+    private readonly byte[][] _packed;
+    private readonly int[] _packedLength;
+    private int _filled;
     private int _blockFill;
+    private Task? _pending;
     private readonly List<(ulong BaseOffset, ushort[] Sizes)> _offsetRecords = [];
     private ulong _blockCount;
     private ulong _written;
@@ -47,10 +57,25 @@ public sealed class ZArchiveWriter : IDisposable
     private bool _finalized;
 
     public ZArchiveWriter(Stream output, bool leaveOpen = false)
+        : this(output, leaveOpen, 0)
+    {
+    }
+
+    /// <param name="threads">Blocks compressed at the same time; 0 picks the processor count, 1 compresses every
+    /// block on the calling thread, as before.</param>
+    public ZArchiveWriter(Stream output, bool leaveOpen, int threads)
     {
         ArgumentNullException.ThrowIfNull(output);
+        ArgumentOutOfRangeException.ThrowIfNegative(threads);
         _output = output;
         _leaveOpen = leaveOpen;
+        _threads = threads > 0 ? threads : Math.Max(1, Environment.ProcessorCount);
+        _compressors = new Compressor?[_threads];
+        int batch = _threads == 1 ? 1 : _threads * BlocksPerThread;
+        _filling = NewBlocks(batch, BlockSize);
+        _queued = NewBlocks(batch, BlockSize);
+        _packed = NewBlocks(batch, Compressor.GetCompressBound(BlockSize));
+        _packedLength = new int[batch];
     }
 
     /// <summary>Total number of bytes written to the output so far.</summary>
@@ -101,14 +126,15 @@ public sealed class ZArchiveWriter : IDisposable
         ulong length = (ulong)data.Length;
         while (!data.IsEmpty)
         {
+            if (_filled == _filling.Length) Dispatch();
             int count = Math.Min(BlockSize - _blockFill, data.Length);
-            data[..count].CopyTo(_block.AsSpan(_blockFill));
+            data[..count].CopyTo(_filling[_filled].AsSpan(_blockFill));
             _blockFill += count;
             data = data[count..];
             if (_blockFill == BlockSize)
             {
-                StoreBlock();
                 _blockFill = 0;
+                _filled++;
             }
         }
         if (_currentFile is not null) _currentFile.FileSize += length;
@@ -122,10 +148,12 @@ public sealed class ZArchiveWriter : IDisposable
         _currentFile = null;
         if (_blockFill > 0)
         {
-            Array.Clear(_block, _blockFill, BlockSize - _blockFill);
-            StoreBlock();
+            Array.Clear(_filling[_filled], _blockFill, BlockSize - _blockFill);
+            _filled++;
             _blockFill = 0;
         }
+        Dispatch();
+        WaitPending();
 
         ulong compressedSize = _written;
         while (_written % 8 != 0) Write([0]);
@@ -238,15 +266,63 @@ public sealed class ZArchiveWriter : IDisposable
         BinaryPrimitives.WriteUInt32BigEndian(footer[140..], FooterMagic);
     }
 
-    private void StoreBlock()
+    private static byte[][] NewBlocks(int count, int size)
+    {
+        var blocks = new byte[count][];
+        for (int i = 0; i < count; i++) blocks[i] = new byte[size];
+        return blocks;
+    }
+
+    /// <summary>Hands the filled blocks to the background and starts filling the other set.</summary>
+    private void Dispatch()
+    {
+        // The previous batch has to be written first: its blocks are reused for filling and its output comes first.
+        WaitPending();
+        int count = _filled;
+        _filled = 0;
+        if (count == 0) return;
+        byte[][] blocks = _filling;
+        (_filling, _queued) = (_queued, _filling);
+        if (_threads == 1) StoreBlocks(blocks, count);
+        else _pending = Task.Run(() => StoreBlocks(blocks, count));
+    }
+
+    // A failed batch stays pending, so every later call reports the failure instead of writing a broken archive.
+    private void WaitPending()
+    {
+        _pending?.GetAwaiter().GetResult();
+        _pending = null;
+    }
+
+    private void StoreBlocks(byte[][] blocks, int count)
+    {
+        if (count == 1)
+        {
+            _packedLength[0] = (_compressors[0] ??= new Compressor(CompressionLevel)).Wrap(blocks[0], _packed[0]);
+        }
+        else
+        {
+            // Each worker takes the next block that nobody has claimed yet and keeps its own compressor.
+            int next = -1;
+            int workers = Math.Min(_threads, count);
+            Parallel.For(0, workers, new ParallelOptions { MaxDegreeOfParallelism = workers }, worker =>
+            {
+                Compressor compressor = _compressors[worker] ??= new Compressor(CompressionLevel);
+                for (int i = Interlocked.Increment(ref next); i < count; i = Interlocked.Increment(ref next))
+                    _packedLength[i] = compressor.Wrap(blocks[i], _packed[i]);
+            });
+        }
+        for (int i = 0; i < count; i++) StoreBlock(blocks[i], _packed[i].AsSpan(0, _packedLength[i]));
+    }
+
+    private void StoreBlock(byte[] block, ReadOnlySpan<byte> compressed)
     {
         ulong offset = _written;
-        ReadOnlySpan<byte> compressed = _compressor.Wrap(_block);
         int stored = compressed.Length;
         if (stored >= BlockSize)
         {
             stored = BlockSize;
-            Write(_block);
+            Write(block);
         }
         else
         {
@@ -310,7 +386,12 @@ public sealed class ZArchiveWriter : IDisposable
 
     public void Dispose()
     {
-        _compressor.Dispose();
+        // Let a batch that is still being written finish before anything it uses goes away. Its failure, if any,
+        // was reported by the call that waited for it, or the archive is being abandoned.
+        try { _pending?.Wait(); }
+        catch (AggregateException) { }
+        _pending = null;
+        foreach (Compressor? compressor in _compressors) compressor?.Dispose();
         _hash.Dispose();
         if (!_leaveOpen) _output.Dispose();
     }
