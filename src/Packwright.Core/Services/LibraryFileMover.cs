@@ -10,8 +10,8 @@ namespace Packwright.Core.Services;
 public static class LibraryFileMover
 {
     public static bool SameVolume(string left, string right) =>
-        string.Equals(Path.GetPathRoot(Path.GetFullPath(left)), Path.GetPathRoot(Path.GetFullPath(right)),
-            StringComparison.OrdinalIgnoreCase);
+        string.Equals(Volumes.RootOf(left), Volumes.RootOf(right),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     public static void Move(string source, string target, CancellationToken cancellationToken,
         IProgress<PackageTaskProgress>? progress = null)

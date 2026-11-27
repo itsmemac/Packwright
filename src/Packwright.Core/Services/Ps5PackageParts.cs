@@ -370,7 +370,7 @@ public static partial class Ps5PackageParts
         IProgress<Ps5PackageMergeProgress>? progress, CancellationToken cancellationToken)
     {
         string work = System.IO.Path.Combine(set.Folder, set.BaseName + ".pkg" + ResumeSuffix);
-        if (!string.Equals(System.IO.Path.GetPathRoot(output), System.IO.Path.GetPathRoot(set.Folder), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(Volumes.RootOf(output), Volumes.RootOf(set.Folder), StringComparison.OrdinalIgnoreCase))
             throw new IOException("Merging in place keeps the package on the drive of its parts. Choose an output on the same drive, or write a new file.");
         long largest = set.Parts.Where(part => part.Number != 0).Select(part => part.Length).DefaultIfEmpty(0).Max();
         if (FreeSpace(set.Folder) is long free && free < largest)
@@ -449,15 +449,7 @@ public static partial class Ps5PackageParts
 
     private static long Length(string path) => new FileInfo(path).Length;
 
-    private static long? FreeSpace(string folder)
-    {
-        try
-        {
-            string? root = System.IO.Path.GetPathRoot(System.IO.Path.GetFullPath(folder));
-            return string.IsNullOrEmpty(root) || root.StartsWith(@"\\", StringComparison.Ordinal) ? null : new DriveInfo(root).AvailableFreeSpace;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
-    }
+    private static long? FreeSpace(string folder) => Volumes.FreeSpace(folder);
 
     private static void TryDelete(string path)
     {

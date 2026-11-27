@@ -190,11 +190,7 @@ public static partial class Ps5LibraryHealth
         }
     }
 
-    private static string DriveRoot(string path)
-    {
-        try { return System.IO.Path.GetPathRoot(path) ?? string.Empty; }
-        catch (ArgumentException) { return string.Empty; }
-    }
+    private static string DriveRoot(string path) => Volumes.RootOf(path);
 
     // ------------------------------------------------------------------ the slower per-file checks
 

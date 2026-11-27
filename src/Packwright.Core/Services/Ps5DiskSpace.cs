@@ -102,8 +102,8 @@ public static class Ps5DiskSpace
 
     private static string RootOf(string path)
     {
-        try { return Path.GetPathRoot(Path.GetFullPath(path)) ?? path; }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return path; }
+        string root = Volumes.RootOf(path);
+        return root.Length > 0 ? root : path;
     }
 
     private static string Gb(long bytes) => (bytes / 1073741824.0).ToString("N1", CultureInfo.InvariantCulture);
